@@ -275,6 +275,21 @@ h2 {
   }
 }
 
+.level-section-header {
+  grid-column: 1 / -1;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #E8966B;
+  padding: 10px 4px 0;
+}
+
+.level-section-header:first-child {
+  padding-top: 0;
+}
+
 .level-card {
   position: relative;
   background: #F8FAFC;

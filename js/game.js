@@ -432,7 +432,16 @@ export class Game {
   renderLevelSelect() {
     const grid = this.dom.levelGrid;
     grid.innerHTML = '';
+    let lastWorld = null;
     LEVELS.forEach((lvl, i) => {
+      if (lvl.world !== lastWorld) {
+        const header = document.createElement('div');
+        header.className = 'level-section-header';
+        header.textContent = lvl.world;
+        grid.appendChild(header);
+        lastWorld = lvl.world;
+      }
+
       const locked = i > this.progress.unlocked;
       const data = this.progress.levels[i] || { stars: 0, bestTime: null };
       const btn = document.createElement('button');

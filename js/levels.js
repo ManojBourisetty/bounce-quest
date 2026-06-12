@@ -43,16 +43,27 @@ const SPIKE_W = 40;
 const SPIKE_MARGIN = 120; // min distance from a segment edge to a spike
 const BLOCK_MARGIN = 100; // min distance from a segment edge to a decor block
 
+// Springs/moving platforms only start showing up in later worlds, and
+// springs need a wide, flat landing zone for their bounce arc (~240px of
+// horizontal travel at full run speed).
+const MOVING_MIN_T = 0.15;
+const SPRING_MIN_T = 0.3;
+const SPRING_PROB = 0.35;
+const SPRING_SEG_MIN = 400;  // minimum segment width that can host a spring
+const SPRING_MARGIN = 60;    // min distance from segment start to the spring
+const SPRING_LAND_CLEAR = 300; // space reserved after the spring for the bounce arc to land
+
 // Procedurally builds a level: a chain of ground segments separated by
 // SAFE_GAP pits, with the occasional spike and floating decor block placed
 // well clear of every segment edge so the gap-jumps stay reliable.
-function generateLevel(id, theme, name) {
+function generateLevel(id, theme, name, world) {
   const rng = mulberry32(1000 + id);
   const t = id / 49; // 0 (easiest) .. 1 (hardest) across all 50 levels
   const numSegments = 8 + Math.floor(t * 4); // 8..12 segments
 
   const platforms = [];
   const spikes = [];
+  const springs = [];
   const stars = [];
   const segments = [];
 
@@ -69,6 +80,8 @@ function generateLevel(id, theme, name) {
   const spikeProb = 0.35 + t * 0.45;
   const blockProb = 0.45;
 
+  const movingProb = Math.min(0.5, Math.max(0, 0.15 + t * 0.35));
+
   segments.forEach((seg, i) => {
     const isFirst = i === 0;
     const isLast = i === numSegments - 1;
@@ -82,9 +95,22 @@ function generateLevel(id, theme, name) {
       hasSpike = true;
     }
 
-    // Decor blocks only go in spike-free segments: the bot never jumps
-    // mid-segment there, so it can't land on a block and get stranded.
-    if (!hasSpike && rng() < blockProb) {
+    if (hasSpike) return;
+
+    // Springs bounce the player straight up; only placed in wide,
+    // hazard-free segments in later worlds so the bounce arc has room to
+    // land back on solid ground.
+    if (!isFirst && !isLast && t >= SPRING_MIN_T && seg.width >= SPRING_SEG_MIN && rng() < SPRING_PROB) {
+      const maxOffset = seg.width - SPRING_MARGIN - SPRING_LAND_CLEAR;
+      const sx = Math.round(seg.x + SPRING_MARGIN + rng() * Math.max(0, maxOffset));
+      springs.push(spring(sx, GROUND_Y));
+      return;
+    }
+
+    // Decor blocks (some of which oscillate as moving platforms in later
+    // worlds) only go in spike- and spring-free segments: the bot never
+    // jumps mid-segment there, so it can't land on one and get stranded.
+    if (rng() < blockProb) {
       const maxBlockW = seg.width - BLOCK_MARGIN * 2;
       const bw = Math.round(Math.min(maxBlockW, 80 + rng() * 70));
       const minX = seg.x + BLOCK_MARGIN;
@@ -92,7 +118,15 @@ function generateLevel(id, theme, name) {
       const bx = Math.round(minX + rng() * Math.max(0, maxX - minX));
       const bh = rng() < 0.5 ? 20 : 24;
       const by = Math.round(GROUND_Y - 90 - rng() * 60);
-      platforms.push(block(bx, by, bw, bh));
+
+      if (t >= MOVING_MIN_T && rng() < movingProb) {
+        const amplitude = Math.round(12 + rng() * 10);
+        const speed = 1 + rng();
+        const phase = rng() * Math.PI * 2;
+        platforms.push(moving(bx, by, bw, bh, 'y', amplitude, speed, phase));
+      } else {
+        platforms.push(block(bx, by, bw, bh));
+      }
     }
   });
 
@@ -109,12 +143,13 @@ function generateLevel(id, theme, name) {
   return {
     id,
     name,
+    world,
     theme,
     width: levelWidth,
     playerStart: PLAYER_START,
     platforms,
     spikes,
-    springs: [],
+    springs,
     stars,
     goal: { x: levelWidth - 60, y: GROUND_Y },
   };
@@ -124,6 +159,7 @@ function generateLevel(id, theme, name) {
 const WORLDS = [
   {
     theme: 'meadow',
+    displayName: 'Meadow',
     names: [
       'Sunny Meadow', 'Buzzing Meadow', 'Daisy Fields', 'Clover Hill',
       'Breezy Pasture', 'Picnic Plains', 'Butterfly Glade', 'Meadow Lookout',
@@ -131,6 +167,7 @@ const WORLDS = [
   },
   {
     theme: 'desert',
+    displayName: 'Desert',
     names: [
       'Desert Dunes', 'Cactus Canyon', 'Mirage Flats', 'Sandy Switchback',
       'Oasis Trail', 'Dune Drifter', 'Scorching Sands', 'Sunbaked Ridge',
@@ -138,6 +175,7 @@ const WORLDS = [
   },
   {
     theme: 'forest',
+    displayName: 'Forest',
     names: [
       'Forest Heights', 'Mossy Hollow', 'Pinewood Path', 'Acorn Trail',
       'Fern Gully', 'Whispering Woods', 'Treetop Trail', 'Forest Canopy',
@@ -145,6 +183,7 @@ const WORLDS = [
   },
   {
     theme: 'snow',
+    displayName: 'Snow',
     names: [
       'Snowy Peaks', 'Frosty Ridge', 'Icicle Pass', 'Powder Slopes',
       'Glacier Walk', 'Frozen Lake', 'Snowdrift Trail', 'Blizzard Bluff',
@@ -153,6 +192,7 @@ const WORLDS = [
   },
   {
     theme: 'sunset',
+    displayName: 'Sunset',
     names: [
       'Sunset Cliffs', 'Golden Hour', 'Amber Ridge', 'Twilight Trail',
       'Dusky Bluffs', 'Evening Glow', 'Sunset Overlook', 'Rosy Horizon',
@@ -161,6 +201,7 @@ const WORLDS = [
   },
   {
     theme: 'candy',
+    displayName: 'Candy',
     names: [
       'Candy Castle', 'Lollipop Lane', 'Gumdrop Hills', 'Marshmallow Meadow',
       'Cotton Candy Clouds', 'Chocolate River', 'Peppermint Pass', 'Sweetshop Summit',
@@ -173,7 +214,7 @@ export const LEVELS = [];
   let id = 0;
   for (const world of WORLDS) {
     for (const name of world.names) {
-      LEVELS.push(generateLevel(id, world.theme, name));
+      LEVELS.push(generateLevel(id, world.theme, name, world.displayName));
       id++;
     }
   }
