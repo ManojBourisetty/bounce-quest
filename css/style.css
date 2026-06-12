@@ -86,6 +86,14 @@ h2 {
   line-height: 1.6;
 }
 
+.privacy-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #bbb;
+  font-size: 0.75rem;
+  text-decoration: underline;
+}
+
 /* ---------- Buttons ---------- */
 .btn {
   display: block;
