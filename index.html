@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Bounce Quest" />
+<meta name="theme-color" content="#8ED8F8" />
+<meta name="description" content="Bounce Quest - a cute offline physics platformer" />
+<title>Bounce Quest</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <div id="level-toast"></div>
+  <div id="respawn-flash"></div>
+
+  <!-- HUD (shown while playing / paused) -->
+  <div id="hud" class="hidden">
+    <button id="pause-btn" class="icon-btn" aria-label="Pause">&#10074;&#10074;</button>
+    <div class="hud-info">
+      <span id="hud-level-name">Level</span>
+      <span class="hud-sep">&bull;</span>
+      <span id="hud-time">0.0s</span>
+    </div>
+    <div class="hud-stars">&#11088; <span id="star-count">0</span>/3</div>
+  </div>
+
+  <!-- Touch controls -->
+  <div id="controls" class="hidden">
+    <div class="dpad">
+      <button id="btn-left" class="ctrl-btn" aria-label="Move left">&#9664;</button>
+      <button id="btn-right" class="ctrl-btn" aria-label="Move right">&#9654;</button>
+    </div>
+    <button id="btn-jump" class="ctrl-btn jump-btn" aria-label="Jump">JUMP</button>
+  </div>
+
+  <!-- Title screen -->
+  <div id="title-screen" class="overlay screen">
+    <button class="mute-btn icon-btn corner-btn" aria-label="Toggle sound">&#128266;</button>
+    <div class="panel title-panel">
+      <h1 class="logo">Bounce Quest</h1>
+      <p class="tagline">A squishy platforming adventure</p>
+      <button id="play-btn" class="btn btn-primary">Play</button>
+      <p class="hint">Arrows to move &bull; JUMP to hop<br />6 levels &bull; 100% offline &#9992;&#65039;</p>
+    </div>
+  </div>
+
+  <!-- Level select -->
+  <div id="level-select" class="overlay screen hidden">
+    <div class="panel level-select-panel">
+      <h2>Select Level</h2>
+      <div id="level-grid" class="level-grid"></div>
+      <button class="btn btn-secondary back-btn">Back</button>
+    </div>
+  </div>
+
+  <!-- Pause overlay -->
+  <div id="pause-screen" class="overlay screen hidden">
+    <div class="panel">
+      <h2>Paused</h2>
+      <button id="resume-btn" class="btn btn-primary">Resume</button>
+      <button id="restart-btn" class="btn btn-secondary">Restart</button>
+      <button id="pause-menu-btn" class="btn btn-secondary">Level Select</button>
+      <button class="mute-btn btn btn-text" aria-label="Toggle sound">&#128266; Sound</button>
+    </div>
+  </div>
+
+  <!-- Level complete overlay -->
+  <div id="complete-screen" class="overlay screen hidden">
+    <div class="panel">
+      <h2 id="complete-title">Level Complete!</h2>
+      <div id="complete-stars" class="stars-row"></div>
+      <p id="complete-time" class="complete-time"></p>
+      <button id="complete-next-btn" class="btn btn-primary">Next Level</button>
+      <button id="complete-replay-btn" class="btn btn-secondary">Replay</button>
+      <button id="complete-menu-btn" class="btn btn-secondary">Level Select</button>
+    </div>
+  </div>
+
+  <!-- Rotate device hint -->
+  <div id="rotate-hint" class="overlay hidden">
+    <div class="panel">
+      <div class="rotate-icon">&#128241;</div>
+      <p>Rotate your device sideways for the best experience</p>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
