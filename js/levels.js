@@ -25,182 +25,197 @@ function star(x, y) {
 }
 const PLAYER_START = { x: 40, y: GROUND_Y - 36 };
 
-export const LEVELS = [
+// Deterministic PRNG (mulberry32) so every level has a fixed, reproducible layout.
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const SAFE_GAP = 120;     // pit width between ground segments
+const SEG_MIN = 360;      // minimum ground segment width
+const SEG_MAX = 560;      // maximum ground segment width
+const SPIKE_W = 40;
+const SPIKE_MARGIN = 120; // min distance from a segment edge to a spike
+const BLOCK_MARGIN = 100; // min distance from a segment edge to a decor block
+
+// Procedurally builds a level: a chain of ground segments separated by
+// SAFE_GAP pits, with the occasional spike and floating decor block placed
+// well clear of every segment edge so the gap-jumps stay reliable.
+function generateLevel(id, theme, name) {
+  const rng = mulberry32(1000 + id);
+  const t = id / 49; // 0 (easiest) .. 1 (hardest) across all 50 levels
+  const numSegments = 8 + Math.floor(t * 4); // 8..12 segments
+
+  const platforms = [];
+  const spikes = [];
+  const stars = [];
+  const segments = [];
+
+  let x = 0;
+  for (let i = 0; i < numSegments; i++) {
+    const width = Math.round(SEG_MIN + rng() * (SEG_MAX - SEG_MIN));
+    segments.push({ x, width });
+    platforms.push(ground(x, width));
+    x += width;
+    if (i < numSegments - 1) x += SAFE_GAP;
+  }
+  const levelWidth = x;
+
+  const spikeProb = 0.35 + t * 0.45;
+  const blockProb = 0.45;
+
+  segments.forEach((seg, i) => {
+    const isFirst = i === 0;
+    const isLast = i === numSegments - 1;
+
+    let hasSpike = false;
+    if (!isFirst && !isLast && rng() < spikeProb) {
+      const minX = seg.x + SPIKE_MARGIN;
+      const maxX = seg.x + seg.width - SPIKE_MARGIN - SPIKE_W;
+      const sx = Math.round(minX + rng() * (maxX - minX));
+      spikes.push(spike(sx, SPIKE_W));
+      hasSpike = true;
+    }
+
+    // Decor blocks only go in spike-free segments: the bot never jumps
+    // mid-segment there, so it can't land on a block and get stranded.
+    if (!hasSpike && rng() < blockProb) {
+      const maxBlockW = seg.width - BLOCK_MARGIN * 2;
+      const bw = Math.round(Math.min(maxBlockW, 80 + rng() * 70));
+      const minX = seg.x + BLOCK_MARGIN;
+      const maxX = seg.x + seg.width - BLOCK_MARGIN - bw;
+      const bx = Math.round(minX + rng() * Math.max(0, maxX - minX));
+      const bh = rng() < 0.5 ? 20 : 24;
+      const by = Math.round(GROUND_Y - 90 - rng() * 60);
+      platforms.push(block(bx, by, bw, bh));
+    }
+  });
+
+  // Three stars at roughly 20% / 50% / 80% through the level, each within
+  // easy jump reach above the ground.
+  [0.2, 0.5, 0.8].forEach((frac) => {
+    const segIndex = Math.min(numSegments - 1, Math.floor(frac * numSegments));
+    const seg = segments[segIndex];
+    const sx = Math.round(seg.x + seg.width / 2);
+    const sy = Math.round(GROUND_Y - 60 - rng() * 40);
+    stars.push(star(sx, sy));
+  });
+
+  return {
+    id,
+    name,
+    theme,
+    width: levelWidth,
+    playerStart: PLAYER_START,
+    platforms,
+    spikes,
+    springs: [],
+    stars,
+    goal: { x: levelWidth - 60, y: GROUND_Y },
+  };
+}
+
+// 50 levels across 6 themed worlds, ordered easiest to hardest.
+const WORLDS = [
   {
-    id: 0,
-    name: 'Sunny Meadow',
     theme: 'meadow',
-    width: 2200,
-    playerStart: PLAYER_START,
-    platforms: [
-      ground(0, 480),
-      ground(580, 420),
-      ground(1100, 350),
-      block(1420, 290, 180, 24),
-      ground(1600, 600),
+    names: [
+      'Sunny Meadow', 'Buzzing Meadow', 'Daisy Fields', 'Clover Hill',
+      'Breezy Pasture', 'Picnic Plains', 'Butterfly Glade', 'Meadow Lookout',
     ],
-    spikes: [spike(760, 40), spike(1850, 40)],
-    springs: [],
-    stars: [star(300, 300), star(850, 290), star(1500, 220)],
-    goal: { x: 2140, y: GROUND_Y },
   },
   {
-    id: 1,
-    name: 'Desert Dunes',
     theme: 'desert',
-    width: 2800,
-    playerStart: PLAYER_START,
-    platforms: [
-      ground(0, 420),
-      ground(540, 360),
-      ground(1020, 280),
-      block(1430, 280, 320, 24),
-      ground(1750, 400),
-      ground(2260, 540),
+    names: [
+      'Desert Dunes', 'Cactus Canyon', 'Mirage Flats', 'Sandy Switchback',
+      'Oasis Trail', 'Dune Drifter', 'Scorching Sands', 'Sunbaked Ridge',
     ],
-    spikes: [spike(650, 40), spike(1950, 40)],
-    springs: [spring(1240)],
-    stars: [star(250, 300), star(750, 290), star(1600, 210)],
-    goal: { x: 2740, y: GROUND_Y },
   },
   {
-    id: 2,
-    name: 'Forest Heights',
     theme: 'forest',
-    width: 3000,
-    playerStart: PLAYER_START,
-    platforms: [
-      ground(0, 400),
-      ground(520, 320),
-      block(650, 290, 100, 20),
-      ground(980, 340),
-      ground(1460, 340),
-      ground(1940, 340),
-      ground(2420, 580),
+    names: [
+      'Forest Heights', 'Mossy Hollow', 'Pinewood Path', 'Acorn Trail',
+      'Fern Gully', 'Whispering Woods', 'Treetop Trail', 'Forest Canopy',
     ],
-    spikes: [spike(680, 40), spike(1600, 40), spike(2120, 40)],
-    springs: [],
-    stars: [star(200, 300), star(700, 250), star(2100, 300)],
-    goal: { x: 2940, y: GROUND_Y },
   },
   {
-    id: 3,
-    name: 'Snowy Peaks',
     theme: 'snow',
-    width: 3000,
-    playerStart: PLAYER_START,
-    platforms: [
-      ground(0, 400),
-      block(560, 260, 260, 24),
-      ground(760, 260),
-      ground(1140, 260),
-      block(1560, 220, 340, 24),
-      ground(1480, 420),
-      moving(2300, 250, 90, 20, 'y', 80, 1.2),
-      ground(2020, 980),
+    names: [
+      'Snowy Peaks', 'Frosty Ridge', 'Icicle Pass', 'Powder Slopes',
+      'Glacier Walk', 'Frozen Lake', 'Snowdrift Trail', 'Blizzard Bluff',
+      'Polar Summit',
     ],
-    spikes: [spike(660, 40, 260), spike(900, 40), spike(1700, 40), spike(2200, 40), spike(2700, 40)],
-    springs: [spring(340), spring(1340)],
-    stars: [star(200, 300), star(680, 190), star(2345, 140)],
-    goal: { x: 2940, y: GROUND_Y },
   },
   {
-    id: 4,
-    name: 'Sunset Cliffs',
     theme: 'sunset',
-    width: 3400,
-    playerStart: PLAYER_START,
-    platforms: [
-      ground(0, 380),
-      ground(500, 300),
-      moving(900, 300, 110, 20, 'x', 80, 1.0),
-      ground(1080, 320),
-      block(1560, 230, 380, 24),
-      ground(1480, 460),
-      moving(2200, 240, 90, 20, 'y', 90, 1.3),
-      ground(2070, 260),
-      ground(2450, 950),
+    names: [
+      'Sunset Cliffs', 'Golden Hour', 'Amber Ridge', 'Twilight Trail',
+      'Dusky Bluffs', 'Evening Glow', 'Sunset Overlook', 'Rosy Horizon',
+      'Starlit Cliffs',
     ],
-    spikes: [
-      spike(620, 40),
-      spike(1150, 40),
-      spike(1700, 40),
-      spike(2150, 40),
-      spike(2600, 40),
-      spike(2950, 40),
-    ],
-    springs: [spring(1340)],
-    stars: [star(200, 300), star(950, 240), star(2245, 100)],
-    goal: { x: 3340, y: GROUND_Y },
   },
   {
-    id: 5,
-    name: 'Candy Castle',
     theme: 'candy',
-    width: 3600,
-    playerStart: PLAYER_START,
-    platforms: [
-      ground(0, 350),
-      ground(470, 410),
-      block(620, 280, 100, 20),
-      ground(1000, 410),
-      block(1150, 250, 100, 20),
-      ground(1530, 410),
-      block(1680, 260, 100, 20),
-      ground(2060, 410),
-      block(2210, 240, 100, 20),
-      ground(2590, 410),
-      ground(3120, 480),
+    names: [
+      'Candy Castle', 'Lollipop Lane', 'Gumdrop Hills', 'Marshmallow Meadow',
+      'Cotton Candy Clouds', 'Chocolate River', 'Peppermint Pass', 'Sweetshop Summit',
     ],
-    spikes: [
-      spike(700, 40),
-      spike(1250, 40),
-      spike(1750, 40),
-      spike(2300, 40),
-      spike(2800, 40),
-      spike(3300, 40),
-    ],
-    springs: [],
-    stars: [star(200, 300), star(670, 250), star(2260, 200)],
-    goal: { x: 3540, y: GROUND_Y },
   },
 ];
 
+export const LEVELS = [];
+{
+  let id = 0;
+  for (const world of WORLDS) {
+    for (const name of world.names) {
+      LEVELS.push(generateLevel(id, world.theme, name));
+      id++;
+    }
+  }
+}
+
+// Soft, warm, child-friendly palette inspired by "Bluey" - dusty blues,
+// terracotta/rust, mustard, sage, and cream.
 export const THEMES = {
   meadow: {
-    skyTop: '#8ED8F8', skyBottom: '#E3F8FF',
-    groundTop: '#7CCB6D', groundBody: '#C68958',
-    accent: '#FFE26B', accent2: '#FFFFFF',
+    skyTop: '#AEDCEB', skyBottom: '#F4EBD9',
+    groundTop: '#A8C97F', groundBody: '#C9A876',
+    accent: '#F0C955', accent2: '#FFFFFF',
     decor: 'meadow',
   },
   desert: {
-    skyTop: '#FFD9A0', skyBottom: '#FFF3DD',
-    groundTop: '#E8C170', groundBody: '#C99A52',
-    accent: '#FF9F5A', accent2: '#5B8C4A',
+    skyTop: '#F5D9A8', skyBottom: '#FBEFDD',
+    groundTop: '#E0BE82', groundBody: '#C99A66',
+    accent: '#E8966B', accent2: '#9CAF88',
     decor: 'desert',
   },
   forest: {
-    skyTop: '#A8E6CF', skyBottom: '#E6FBF0',
-    groundTop: '#4F9A5B', groundBody: '#7A5230',
-    accent: '#2F6B3C', accent2: '#FFD9A0',
+    skyTop: '#BFE0D6', skyBottom: '#EAF6F0',
+    groundTop: '#8FB97A', groundBody: '#9C7456',
+    accent: '#5C8C6B', accent2: '#F5D9A8',
     decor: 'forest',
   },
   snow: {
-    skyTop: '#BFE3F0', skyBottom: '#F2FBFF',
-    groundTop: '#FFFFFF', groundBody: '#C9D6E3',
-    accent: '#9FC9E0', accent2: '#FFFFFF',
+    skyTop: '#D6EAF5', skyBottom: '#F7FBFD',
+    groundTop: '#FFFFFF', groundBody: '#B8CDDC',
+    accent: '#F0DDB8', accent2: '#FFFFFF',
     decor: 'snow',
   },
   sunset: {
-    skyTop: '#FF9A76', skyBottom: '#FFD3A5',
-    groundTop: '#8B5E3C', groundBody: '#6B4423',
-    accent: '#FF6FAE', accent2: '#FFE26B',
+    skyTop: '#F0B080', skyBottom: '#FBDCC0',
+    groundTop: '#B98A68', groundBody: '#8C6A4E',
+    accent: '#E8A0A0', accent2: '#F0C955',
     decor: 'sunset',
   },
   candy: {
-    skyTop: '#FFD1E8', skyBottom: '#F8E1FF',
-    groundTop: '#FF9FCB', groundBody: '#C77DFF',
-    accent: '#FFFFFF', accent2: '#6FE7FF',
+    skyTop: '#F5D6E8', skyBottom: '#FBEFF8',
+    groundTop: '#F0AFCB', groundBody: '#B89BD9',
+    accent: '#FFFFFF', accent2: '#8FC9DE',
     decor: 'candy',
   },
 };

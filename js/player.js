@@ -5,13 +5,13 @@ import {
 } from './constants.js';
 import { clamp, randRange } from './utils.js';
 
-const BODY = '#FF8C61';
-const BODY_SHADE = '#F26B45';
-const BELLY = '#FFE3D1';
+const BODY = '#E8966B';
+const BODY_SHADE = '#D67D54';
+const BELLY = '#FBE9DC';
 const EYE_WHITE = '#FFFFFF';
-const PUPIL = '#3A3A3A';
-const CHEEK = '#FFB3C1';
-const FOOT = '#F26B45';
+const PUPIL = '#5A4A42';
+const CHEEK = '#F5B9AE';
+const FOOT = '#D67D54';
 
 export class Player {
   constructor(x, y) {
@@ -247,7 +247,7 @@ export class Player {
 
     // Body
     const grad = ctx.createRadialGradient(-baseR * 0.3, -baseR * 1.6, baseR * 0.3, 0, -baseR, baseR * 1.6);
-    grad.addColorStop(0, '#FFB28A');
+    grad.addColorStop(0, '#F5B98F');
     grad.addColorStop(1, BODY);
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -303,14 +303,14 @@ export class Player {
     }
 
     // Mouth
-    ctx.strokeStyle = '#A6432B';
+    ctx.strokeStyle = '#8C5A42';
     ctx.lineWidth = Math.max(1.5, baseR * 0.07);
     ctx.lineCap = 'round';
     ctx.beginPath();
     if (!this.grounded) {
       // open "o" while airborne
       ctx.ellipse(eyeDir * 0.5, -baseR * 1.05, baseR * 0.14, baseR * 0.18, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#A6432B';
+      ctx.fillStyle = '#8C5A42';
       ctx.fill();
     } else {
       ctx.arc(eyeDir * 0.5, -baseR * 1.1, baseR * 0.22, 0.15 * Math.PI, 0.85 * Math.PI);

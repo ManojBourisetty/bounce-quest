@@ -1,5 +1,3 @@
-import { GROUND_Y } from './levels.js';
-
 function roundRect(ctx, x, y, w, h, r) {
   const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
@@ -52,7 +50,7 @@ function drawPlatform(ctx, p, theme) {
 }
 
 function drawSpike(ctx, s) {
-  ctx.fillStyle = '#E0566B';
+  ctx.fillStyle = '#E08585';
   const teeth = Math.max(1, Math.round(s.w / 18));
   const tw = s.w / teeth;
   for (let i = 0; i < teeth; i++) {
@@ -81,10 +79,10 @@ function drawSpring(ctx, s, time, bounceTime) {
   const baseY = s.y + s.h;
   const squish = bounceTime > 0 ? Math.max(0.35, 1 - bounceTime * 6) : 1;
   const h = s.h * squish;
-  ctx.fillStyle = '#FFB23E';
+  ctx.fillStyle = '#F0C975';
   roundRect(ctx, s.x, baseY - 6, s.w, 6, 2);
   ctx.fill();
-  ctx.strokeStyle = '#FF8C00';
+  ctx.strokeStyle = '#E0A857';
   ctx.lineWidth = 4;
   ctx.lineCap = 'round';
   const coils = 3;
@@ -107,13 +105,13 @@ function drawStar(ctx, star, time, index, collected) {
   ctx.translate(star.x, star.y + bob);
   ctx.rotate(rot);
   const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, star.r * 2.2);
-  glow.addColorStop(0, 'rgba(255,217,107,0.55)');
-  glow.addColorStop(1, 'rgba(255,217,107,0)');
+  glow.addColorStop(0, 'rgba(240,201,85,0.55)');
+  glow.addColorStop(1, 'rgba(240,201,85,0)');
   ctx.fillStyle = glow;
   ctx.beginPath();
   ctx.arc(0, 0, star.r * 2.2, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#FFD93D';
+  ctx.fillStyle = '#F0C955';
   ctx.beginPath();
   for (let i = 0; i < 5; i++) {
     const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
@@ -136,11 +134,11 @@ function drawGoal(ctx, goal, theme, time) {
   ctx.fillRect(goal.x - 3, goal.y - poleH, 6, poleH);
   ctx.beginPath();
   ctx.arc(goal.x, goal.y - poleH, 6, 0, Math.PI * 2);
-  ctx.fillStyle = '#FFD93D';
+  ctx.fillStyle = '#F0C955';
   ctx.fill();
 
   const wave = Math.sin(time * 4) * 6;
-  ctx.fillStyle = theme.accent2 || '#FF6FAE';
+  ctx.fillStyle = theme.accent2 || '#E8A0A0';
   ctx.beginPath();
   ctx.moveTo(goal.x + 3, goal.y - poleH + 4);
   ctx.quadraticCurveTo(goal.x + 46 + wave, goal.y - poleH + 14, goal.x + 3, goal.y - poleH + 36);
@@ -168,5 +166,3 @@ export function renderLevel(ctx, level, theme, time, collectedStars, springState
   });
   drawGoal(ctx, level.goal, theme, time);
 }
-
-export { GROUND_Y };

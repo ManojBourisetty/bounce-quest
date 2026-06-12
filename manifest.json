@@ -1,13 +1,15 @@
 {
+  "id": "/",
   "name": "Bounce Quest",
   "short_name": "Bounce Quest",
-  "description": "A cute offline physics platformer with squishy animations and 6 hand-built levels.",
+  "description": "A cute offline physics platformer with squishy animations and 50 hand-tuned levels.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "landscape",
-  "background_color": "#8ED8F8",
-  "theme_color": "#8ED8F8",
+  "lang": "en",
+  "background_color": "#A8D8E8",
+  "theme_color": "#A8D8E8",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
