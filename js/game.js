@@ -17,7 +17,15 @@ function loadProgress() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      if (data && Array.isArray(data.levels) && data.levels.length === LEVELS.length) return data;
+      if (data && Array.isArray(data.levels)) {
+        // Pad or trim to the current level count instead of discarding
+        // everything, so a future change to the number of levels doesn't
+        // wipe existing progress.
+        const levels = data.levels.slice(0, LEVELS.length);
+        while (levels.length < LEVELS.length) levels.push({ stars: 0, bestTime: null });
+        const unlocked = Math.min(Number(data.unlocked) || 0, LEVELS.length - 1);
+        return { unlocked, levels };
+      }
     }
   } catch (e) {
     /* ignore */
@@ -111,7 +119,17 @@ export class Game {
       a.resume();
       a.startMusic();
     };
-    window.addEventListener('pointerdown', initAudio, { once: true });
+    // Multiple gesture types so the very first tap/keypress unlocks audio
+    // even on browsers where one event type doesn't count as a "user
+    // gesture" for autoplay purposes.
+    ['pointerdown', 'touchend', 'keydown'].forEach((evt) =>
+      window.addEventListener(evt, initAudio, { once: true })
+    );
+    // iOS suspends the AudioContext when the page is backgrounded; resume
+    // it when the player comes back so music/SFX keep working.
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) a.resume();
+    });
 
     const muted = localStorage.getItem(MUTE_KEY) === 'true';
     a.setMuted(muted);
