@@ -1,9 +1,9 @@
 // Lightweight synthesized sound effects via Web Audio API.
 // No audio files needed, so everything works offline out of the box.
 
-// Gentle looping background score: a 4-bar melody over a slow two-chord
-// bass drone, all in C major pentatonic so it stays pleasant no matter
-// how the notes overlap.
+// Gentle looping background score: a 4-bar melody with bass, sustained
+// chords, and light percussion (kick + hi-hat), all in C major so it stays
+// pleasant no matter how the notes overlap.
 const MUSIC_TEMPO = 100; // BPM
 const MUSIC_BEAT = 60 / MUSIC_TEMPO; // seconds per quarter note
 const MUSIC_MELODY = [
@@ -13,6 +13,12 @@ const MUSIC_MELODY = [
   392.00, 329.63, 293.66, 261.63, // G4 E4 D4 C4
 ];
 const MUSIC_BASS = [130.81, 98.00, 130.81, 98.00]; // C3 G2 C3 G2, one per bar
+const MUSIC_CHORDS = [
+  [261.63, 329.63, 392.00], // C major (C4 E4 G4)
+  [196.00, 246.94, 293.66], // G major (G3 B3 D4)
+  [261.63, 329.63, 392.00], // C major
+  [196.00, 246.94, 293.66], // G major
+];
 
 export class AudioManager {
   constructor() {
@@ -128,10 +134,15 @@ export class AudioManager {
     }
     while (this.nextNoteTime < this.ctx.currentTime + lookahead) {
       const t0 = this.nextNoteTime;
+      const beatInBar = this.musicStep % 4;
       this.playMelodyNote(MUSIC_MELODY[this.musicStep], t0);
-      if (this.musicStep % 4 === 0) {
-        this.playBassNote(MUSIC_BASS[(this.musicStep / 4) % MUSIC_BASS.length], t0);
+      if (beatInBar === 0) {
+        const bar = Math.floor(this.musicStep / 4) % MUSIC_BASS.length;
+        this.playBassNote(MUSIC_BASS[bar], t0);
+        this.playPadChord(MUSIC_CHORDS[bar], t0, MUSIC_BEAT * 4);
       }
+      if (beatInBar === 0 || beatInBar === 2) this.playKick(t0);
+      this.playHiHat(t0);
       this.nextNoteTime += MUSIC_BEAT;
       this.musicStep = (this.musicStep + 1) % MUSIC_MELODY.length;
     }
@@ -143,7 +154,7 @@ export class AudioManager {
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(freq, t0);
     g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(0.05, t0 + 0.03);
+    g.gain.linearRampToValueAtTime(0.11, t0 + 0.03);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + MUSIC_BEAT * 0.9);
     osc.connect(g);
     g.connect(this.musicGain);
@@ -158,11 +169,67 @@ export class AudioManager {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, t0);
     g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(0.045, t0 + 0.15);
+    g.gain.linearRampToValueAtTime(0.1, t0 + 0.15);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur * 0.95);
     osc.connect(g);
     g.connect(this.musicGain);
     osc.start(t0);
     osc.stop(t0 + dur);
+  }
+
+  // Sustained triad under each bar, fading in/out, to give the melody and
+  // bass some harmonic body.
+  playPadChord(freqs, t0, dur) {
+    freqs.forEach((freq) => {
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(0.035, t0 + 0.4);
+      g.gain.setValueAtTime(0.035, t0 + dur - 0.4);
+      g.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g);
+      g.connect(this.musicGain);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.05);
+    });
+  }
+
+  // Soft kick drum: a sine thump with a quick downward pitch sweep, on
+  // beats 1 and 3 of each bar.
+  playKick(t0) {
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, t0);
+    osc.frequency.exponentialRampToValueAtTime(45, t0 + 0.12);
+    g.gain.setValueAtTime(0.22, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    osc.connect(g);
+    g.connect(this.musicGain);
+    osc.start(t0);
+    osc.stop(t0 + 0.2);
+  }
+
+  // Soft hi-hat tick: filtered noise burst, on every beat.
+  playHiHat(t0) {
+    const bufferSize = Math.max(1, Math.floor(this.ctx.sampleRate * 0.05));
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 6000;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.05, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.04);
+    noise.connect(filter);
+    filter.connect(g);
+    g.connect(this.musicGain);
+    noise.start(t0);
+    noise.stop(t0 + 0.05);
   }
 }
