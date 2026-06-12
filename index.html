@@ -44,7 +44,10 @@
 
   <!-- Title screen -->
   <div id="title-screen" class="overlay screen">
-    <button class="mute-btn icon-btn corner-btn" aria-label="Toggle sound">&#128266;</button>
+    <div class="corner-controls">
+      <button class="music-btn icon-btn" aria-label="Toggle music">&#127925;</button>
+      <button class="mute-btn icon-btn" aria-label="Toggle sound">&#128266;</button>
+    </div>
     <div class="panel title-panel">
       <h1 class="logo">Bounce Quest</h1>
       <p class="tagline">A squishy platforming adventure</p>
@@ -70,6 +73,7 @@
       <button id="resume-btn" class="btn btn-primary">Resume</button>
       <button id="restart-btn" class="btn btn-secondary">Restart</button>
       <button id="pause-menu-btn" class="btn btn-secondary">Level Select</button>
+      <button class="music-btn btn btn-text" aria-label="Toggle music">&#127925; Music</button>
       <button class="mute-btn btn btn-text" aria-label="Toggle sound">&#128266; Sound</button>
     </div>
   </div>

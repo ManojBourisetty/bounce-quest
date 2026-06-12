@@ -157,6 +157,18 @@ h2 {
   right: max(16px, env(safe-area-inset-right));
 }
 
+.corner-controls {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  display: flex;
+  gap: 8px;
+}
+
+.music-btn.muted {
+  opacity: 0.45;
+}
+
 /* ---------- HUD ---------- */
 #hud {
   position: fixed;
