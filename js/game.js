@@ -108,6 +108,7 @@ export class Game {
     const initAudio = () => {
       a.init();
       a.resume();
+      a.startMusic();
     };
     window.addEventListener('pointerdown', initAudio, { once: true });
 
@@ -191,6 +192,7 @@ export class Game {
 
     this.globalTime += dt;
     this.particles.update(dt);
+    this.audio.tickMusic();
 
     if (this.state === 'playing') {
       if (!this.respawning) this.updatePlaying(dt);
