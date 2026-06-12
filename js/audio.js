@@ -1,9 +1,9 @@
 // Lightweight synthesized sound effects via Web Audio API.
 // No audio files needed, so everything works offline out of the box.
 
-// Gentle looping background score: a 4-bar melody with bass and sustained
-// chords, all in C major so it stays smooth and pleasant no matter how the
-// notes overlap.
+// Gentle looping background score: a 4-bar melody over sustained chords,
+// all in C major so it stays smooth and pleasant no matter how the notes
+// overlap.
 const MUSIC_TEMPO = 100; // BPM
 const MUSIC_BEAT = 60 / MUSIC_TEMPO; // seconds per quarter note
 const MUSIC_MELODY = [
@@ -12,7 +12,6 @@ const MUSIC_MELODY = [
   659.25, 587.33, 523.25, 440.00, // E5 D5 C5 A4
   392.00, 329.63, 293.66, 261.63, // G4 E4 D4 C4
 ];
-const MUSIC_BASS = [130.81, 98.00, 130.81, 98.00]; // C3 G2 C3 G2, one per bar
 const MUSIC_CHORDS = [
   [261.63, 329.63, 392.00], // C major (C4 E4 G4)
   [196.00, 246.94, 293.66], // G major (G3 B3 D4)
@@ -137,8 +136,7 @@ export class AudioManager {
       const beatInBar = this.musicStep % 4;
       this.playMelodyNote(MUSIC_MELODY[this.musicStep], t0);
       if (beatInBar === 0) {
-        const bar = Math.floor(this.musicStep / 4) % MUSIC_BASS.length;
-        this.playBassNote(MUSIC_BASS[bar], t0);
+        const bar = Math.floor(this.musicStep / 4) % MUSIC_CHORDS.length;
         this.playPadChord(MUSIC_CHORDS[bar], t0, MUSIC_BEAT * 4);
       }
       this.nextNoteTime += MUSIC_BEAT;
@@ -160,23 +158,8 @@ export class AudioManager {
     osc.stop(t0 + MUSIC_BEAT);
   }
 
-  playBassNote(freq, t0) {
-    const dur = MUSIC_BEAT * 4;
-    const osc = this.ctx.createOscillator();
-    const g = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, t0);
-    g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(0.1, t0 + 0.15);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur * 0.95);
-    osc.connect(g);
-    g.connect(this.musicGain);
-    osc.start(t0);
-    osc.stop(t0 + dur);
-  }
-
-  // Sustained triad under each bar, fading in/out, to give the melody and
-  // bass some harmonic body.
+  // Sustained triad under each bar, fading in/out, to give the melody some
+  // harmonic body.
   playPadChord(freqs, t0, dur) {
     freqs.forEach((freq) => {
       const osc = this.ctx.createOscillator();
@@ -193,5 +176,4 @@ export class AudioManager {
       osc.stop(t0 + dur + 0.05);
     });
   }
-
 }
