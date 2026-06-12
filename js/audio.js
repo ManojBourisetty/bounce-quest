@@ -1,22 +1,17 @@
 // Lightweight synthesized sound effects via Web Audio API.
 // No audio files needed, so everything works offline out of the box.
 
-// Gentle looping background score: a 4-bar melody over sustained chords,
-// all in C major so it stays smooth and pleasant no matter how the notes
-// overlap.
+// Gentle looping background score: a slow ambient pad cycling through a
+// I-V-vi-IV chord progression (C - G - Am - F). Each chord is a sustained
+// triad that fades in/out and cross-fades into the next, with no discrete
+// note attacks, so it stays smooth no matter how it overlaps with SFX.
 const MUSIC_TEMPO = 100; // BPM
 const MUSIC_BEAT = 60 / MUSIC_TEMPO; // seconds per quarter note
-const MUSIC_MELODY = [
-  523.25, 440.00, 392.00, 329.63, // C5 A4 G4 E4
-  392.00, 440.00, 523.25, 587.33, // G4 A4 C5 D5
-  659.25, 587.33, 523.25, 440.00, // E5 D5 C5 A4
-  392.00, 329.63, 293.66, 261.63, // G4 E4 D4 C4
-];
 const MUSIC_CHORDS = [
   [261.63, 329.63, 392.00], // C major (C4 E4 G4)
   [196.00, 246.94, 293.66], // G major (G3 B3 D4)
-  [261.63, 329.63, 392.00], // C major
-  [196.00, 246.94, 293.66], // G major
+  [220.00, 261.63, 329.63], // A minor (A3 C4 E4)
+  [174.61, 220.00, 261.63], // F major (F3 A3 C4)
 ];
 
 export class AudioManager {
@@ -120,46 +115,28 @@ export class AudioManager {
     this.nextNoteTime = this.ctx.currentTime + 0.1;
   }
 
-  // Lookahead scheduler: called every frame, queues up notes shortly
-  // before they're due so timing stays sample-accurate even though this
-  // is only driven by requestAnimationFrame.
+  // Lookahead scheduler: called every frame, queues up the next chord
+  // shortly before it's due so timing stays sample-accurate even though
+  // this is only driven by requestAnimationFrame.
   tickMusic() {
     if (!this.ctx || !this.musicPlaying || this.muted || this.musicMuted) return;
     const lookahead = 0.2;
     // If the tab was backgrounded and the clock jumped far ahead, resync
-    // instead of firing a burst of "missed" notes.
+    // instead of firing a burst of "missed" chords.
     if (this.nextNoteTime < this.ctx.currentTime - 1) {
       this.nextNoteTime = this.ctx.currentTime + 0.05;
     }
+    const barDuration = MUSIC_BEAT * 4;
     while (this.nextNoteTime < this.ctx.currentTime + lookahead) {
       const t0 = this.nextNoteTime;
-      const beatInBar = this.musicStep % 4;
-      this.playMelodyNote(MUSIC_MELODY[this.musicStep], t0);
-      if (beatInBar === 0) {
-        const bar = Math.floor(this.musicStep / 4) % MUSIC_CHORDS.length;
-        this.playPadChord(MUSIC_CHORDS[bar], t0, MUSIC_BEAT * 4);
-      }
-      this.nextNoteTime += MUSIC_BEAT;
-      this.musicStep = (this.musicStep + 1) % MUSIC_MELODY.length;
+      this.playPadChord(MUSIC_CHORDS[this.musicStep], t0, barDuration);
+      this.nextNoteTime += barDuration;
+      this.musicStep = (this.musicStep + 1) % MUSIC_CHORDS.length;
     }
   }
 
-  playMelodyNote(freq, t0) {
-    const osc = this.ctx.createOscillator();
-    const g = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(freq, t0);
-    g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(0.11, t0 + 0.03);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + MUSIC_BEAT * 0.9);
-    osc.connect(g);
-    g.connect(this.musicGain);
-    osc.start(t0);
-    osc.stop(t0 + MUSIC_BEAT);
-  }
-
-  // Sustained triad under each bar, fading in/out, to give the melody some
-  // harmonic body.
+  // Sustained triad for each bar, fading in/out smoothly with no discrete
+  // note attacks - the sole layer of the ambient background score.
   playPadChord(freqs, t0, dur) {
     freqs.forEach((freq) => {
       const osc = this.ctx.createOscillator();
