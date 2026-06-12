@@ -20,6 +20,7 @@ export class AudioManager {
     this.master = null;
     this.musicGain = null;
     this.muted = false;
+    this.musicMuted = false;
     this.musicPlaying = false;
     this.musicStep = 0;
     this.nextNoteTime = 0;
@@ -34,7 +35,7 @@ export class AudioManager {
     this.master.gain.value = 0.35;
     this.master.connect(this.ctx.destination);
     this.musicGain = this.ctx.createGain();
-    this.musicGain.gain.value = 1;
+    this.musicGain.gain.value = this.musicMuted ? 0 : 1;
     this.musicGain.connect(this.master);
   }
 
@@ -47,6 +48,11 @@ export class AudioManager {
   setMuted(muted) {
     this.muted = muted;
     if (this.master) this.master.gain.value = muted ? 0 : 0.35;
+  }
+
+  setMusicMuted(muted) {
+    this.musicMuted = muted;
+    if (this.musicGain) this.musicGain.gain.value = muted ? 0 : 1;
   }
 
   tone(freq, duration, { type = 'sine', gain = 0.3, attack = 0.005, sweep = 0, delay = 0 } = {}) {
@@ -113,7 +119,7 @@ export class AudioManager {
   // before they're due so timing stays sample-accurate even though this
   // is only driven by requestAnimationFrame.
   tickMusic() {
-    if (!this.ctx || !this.musicPlaying || this.muted) return;
+    if (!this.ctx || !this.musicPlaying || this.muted || this.musicMuted) return;
     const lookahead = 0.2;
     // If the tab was backgrounded and the clock jumped far ahead, resync
     // instead of firing a burst of "missed" notes.

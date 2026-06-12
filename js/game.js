@@ -10,6 +10,7 @@ import { clamp, aabbOverlap } from './utils.js';
 
 const STORAGE_KEY = 'bounceQuest.progress.v1';
 const MUTE_KEY = 'bounceQuest.muted';
+const MUSIC_MUTE_KEY = 'bounceQuest.musicMuted';
 
 function loadProgress() {
   try {
@@ -121,6 +122,19 @@ export class Game {
         a.setMuted(m);
         localStorage.setItem(MUTE_KEY, String(m));
         document.querySelectorAll('.mute-btn').forEach((b) => (b.textContent = m ? '\u{1F507}' : '\u{1F50A}'));
+        a.click();
+      });
+    });
+
+    const musicMuted = localStorage.getItem(MUSIC_MUTE_KEY) === 'true';
+    a.setMusicMuted(musicMuted);
+    document.querySelectorAll('.music-btn').forEach((btn) => {
+      btn.classList.toggle('muted', musicMuted);
+      btn.addEventListener('click', () => {
+        const m = !a.musicMuted;
+        a.setMusicMuted(m);
+        localStorage.setItem(MUSIC_MUTE_KEY, String(m));
+        document.querySelectorAll('.music-btn').forEach((b) => b.classList.toggle('muted', m));
         a.click();
       });
     });
