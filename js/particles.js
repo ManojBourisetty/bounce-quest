@@ -64,7 +64,7 @@ export class ParticleSystem {
     }
   }
 
-  sparkle(x, y, color = '#FFD93D', count = 14) {
+  sparkle(x, y, color = '#F0C955', count = 14) {
     for (let i = 0; i < count; i++) {
       const angle = randRange(0, Math.PI * 2);
       const speed = randRange(60, 180);
@@ -87,7 +87,7 @@ export class ParticleSystem {
   }
 
   confetti(x, y, count = 36) {
-    const colors = ['#FF6FAE', '#6FE7FF', '#FFE26B', '#7CCB6D', '#C77DFF', '#FF9F5A'];
+    const colors = ['#E8A0A0', '#8FC9DE', '#F0C955', '#A8C97F', '#B89BD9', '#E8966B'];
     for (let i = 0; i < count; i++) {
       const angle = randRange(-Math.PI, 0) - Math.PI / 2;
       const speed = randRange(120, 380);

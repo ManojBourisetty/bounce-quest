@@ -13,7 +13,7 @@ html, body {
   position: fixed;
   touch-action: none;
   overscroll-behavior: none;
-  background: #8ED8F8;
+  background: #A8D8E8;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-user-select: none;
   user-select: none;
@@ -67,7 +67,7 @@ h2 {
 
 .logo {
   font-size: clamp(2.2rem, 8vw, 3rem);
-  color: #FF8C61;
+  color: #E8966B;
   margin-bottom: 4px;
   letter-spacing: 1px;
   text-shadow: 2px 3px 0 rgba(0, 0, 0, 0.08);
@@ -84,6 +84,14 @@ h2 {
   color: #aaa;
   font-size: 0.82rem;
   line-height: 1.6;
+}
+
+.privacy-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #bbb;
+  font-size: 0.75rem;
+  text-decoration: underline;
 }
 
 /* ---------- Buttons ---------- */
@@ -106,9 +114,9 @@ h2 {
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, #FFB28A, #FF8C61);
+  background: linear-gradient(180deg, #F5B98F, #E8966B);
   color: #fff;
-  box-shadow: 0 4px 0 #E06B45, 0 6px 14px rgba(255, 140, 97, 0.35);
+  box-shadow: 0 4px 0 #C97850, 0 6px 14px rgba(232, 150, 107, 0.35);
 }
 
 .btn-secondary {
@@ -240,11 +248,11 @@ h2 {
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: 1px;
-  background: rgba(255, 140, 97, 0.75);
+  background: rgba(232, 150, 107, 0.75);
 }
 
 .jump-btn:active {
-  background: rgba(255, 140, 97, 1);
+  background: rgba(232, 150, 107, 1);
 }
 
 /* ---------- Level select ---------- */
@@ -294,7 +302,7 @@ h2 {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #FF8C61;
+  background: #E8966B;
   color: #fff;
   display: flex;
   align-items: center;
@@ -316,7 +324,7 @@ h2 {
 }
 
 .level-card-stars .star.filled {
-  color: #FFD93D;
+  color: #F0C955;
 }
 
 .level-card-lock {
@@ -338,7 +346,7 @@ h2 {
 }
 
 .stars-row .star.filled {
-  color: #FFD93D;
+  color: #F0C955;
   animation: starPop 0.5s ease both;
 }
 

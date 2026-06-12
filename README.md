@@ -1,14 +1,15 @@
 # Bounce Quest
 
 A cute, offline-playable physics platformer built as an installable Progressive
-Web App. Hop, bounce, and collect stars across 6 hand-built levels — meadow,
-desert, forest, snowy peaks, sunset cliffs, and a candy castle.
+Web App. Hop, bounce, and collect stars across 50 levels spanning 6 cozy
+worlds — meadow, desert, forest, snowy peaks, sunset cliffs, and a candy castle.
 
 ## Features
 
 - Squishy, hand-animated cartoon character with idle, run, jump, and landing poses
-- Smooth platformer physics: variable jump height, coyote time, jump buffering, springs
-- 6 unique themed levels with parallax backgrounds, moving platforms, spikes, and collectible stars
+- Smooth platformer physics: variable jump height, coyote time, jump buffering
+- 50 levels across 6 themed worlds with parallax backgrounds, spikes, and collectible stars — longer runs that suit both quick play and longer sessions
+- Soft, pastel, child-friendly color palette
 - Touch controls for mobile plus full keyboard support
 - 100% offline after first load via a service worker — installable on iOS via Safari "Add to Home Screen"
 

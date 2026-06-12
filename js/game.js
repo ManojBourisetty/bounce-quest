@@ -258,7 +258,7 @@ export class Game {
         player.bounce(SPRING_VELOCITY);
         this.audio.spring();
         this.springStates[i] = 0.25;
-        this.particles.sparkle(s.x + s.w / 2, s.y, '#FFB23E', 12);
+        this.particles.sparkle(s.x + s.w / 2, s.y, '#F0C975', 12);
       }
       this.springOverlap[i] = overlap;
     });
@@ -269,7 +269,7 @@ export class Game {
         if (aabbOverlap(player.x, player.y, player.w, player.h, star.x - star.r, star.y - star.r, star.r * 2, star.r * 2)) {
           this.collectedStars.add(i);
           this.audio.star();
-          this.particles.sparkle(star.x, star.y, '#FFD93D', 18);
+          this.particles.sparkle(star.x, star.y, '#F0C955', 18);
           this.updateHUDStars();
         }
       }
