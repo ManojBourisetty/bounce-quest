@@ -298,6 +298,83 @@ export const LEVELS = [];
   }
 }
 
+const BONUS_WIDTH = 2400;
+
+// Bonus levels: one long, hazard-free stretch of ground packed with springs
+// and stars to bounce around in. There's nothing to fail here - every star
+// collected becomes a coin, spendable on character skins.
+function generateBonusLevel(id, theme, name, world) {
+  const rng = mulberry32(5000 + id);
+  const platforms = [ground(0, BONUS_WIDTH)];
+  const springs = [];
+  const stars = [];
+
+  const blockSpecs = [
+    { x: 260, y: GROUND_Y - 110, w: 90, h: 22 },
+    { x: 700, y: GROUND_Y - 150, w: 90, h: 22, axis: 'y' },
+    { x: 1150, y: GROUND_Y - 120, w: 100, h: 22 },
+    { x: 1600, y: GROUND_Y - 160, w: 90, h: 22, axis: 'x' },
+    { x: 2000, y: GROUND_Y - 110, w: 100, h: 22 },
+  ];
+  blockSpecs.forEach((b) => {
+    if (b.axis) {
+      const amplitude = Math.round(14 + rng() * 10);
+      const speed = 1 + rng();
+      const phase = rng() * Math.PI * 2;
+      platforms.push(moving(b.x, b.y, b.w, b.h, b.axis, amplitude, speed, phase));
+    } else {
+      platforms.push(block(b.x, b.y, b.w, b.h));
+    }
+  });
+
+  // Springs for big star-collecting bounces.
+  [380, 980, 1780].forEach((sx) => springs.push(spring(sx, GROUND_Y)));
+
+  // Low stars sit along the ground for an easy hop; high stars sit near the
+  // apex of a spring bounce.
+  [150, 230, 850, 1300, 1380, 2050, 2150, 2250].forEach((sx) => {
+    stars.push(star(sx, Math.round(GROUND_Y - 55 - rng() * 30)));
+  });
+  [380, 460, 540, 980, 1060, 1780, 1860].forEach((sx) => {
+    stars.push(star(sx, Math.round(GROUND_Y - 190 - rng() * 40)));
+  });
+
+  return {
+    id,
+    name,
+    world,
+    theme,
+    bonus: true,
+    width: BONUS_WIDTH,
+    playerStart: PLAYER_START,
+    platforms,
+    spikes: [],
+    springs,
+    stars,
+    goal: { x: BONUS_WIDTH - 60, y: GROUND_Y },
+  };
+}
+
+// One bonus round after every tenth main level, themed after the world it
+// follows.
+const BONUS_DEFS = [
+  { afterMainId: 9, theme: 'desert', name: 'Desert Bonus Round' },
+  { afterMainId: 19, theme: 'forest', name: 'Forest Bonus Round' },
+  { afterMainId: 29, theme: 'snow', name: 'Snow Bonus Round' },
+  { afterMainId: 39, theme: 'sunset', name: 'Sunset Bonus Round' },
+  { afterMainId: 49, theme: 'candy', name: 'Candy Bonus Round' },
+  { afterMainId: 59, theme: 'ocean', name: 'Ocean Bonus Round' },
+  { afterMainId: 69, theme: 'cave', name: 'Cave Bonus Round' },
+  { afterMainId: 79, theme: 'volcano', name: 'Volcano Bonus Round' },
+  { afterMainId: 89, theme: 'sky', name: 'Sky Bonus Round' },
+  { afterMainId: 99, theme: 'space', name: 'Space Bonus Round' },
+];
+
+export const BONUS_LEVELS = BONUS_DEFS.map((def, i) => ({
+  ...generateBonusLevel(i, def.theme, def.name, 'Bonus'),
+  afterMainId: def.afterMainId,
+}));
+
 // Soft, warm, child-friendly palette inspired by "Bluey" - dusty blues,
 // terracotta/rust, mustard, sage, and cream.
 export const THEMES = {

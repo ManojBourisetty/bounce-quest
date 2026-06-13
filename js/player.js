@@ -4,21 +4,19 @@ import {
   COYOTE_TIME, JUMP_BUFFER, PLAYER_W, PLAYER_H,
 } from './constants.js';
 import { clamp, randRange } from './utils.js';
+import { CHARACTERS } from './characters.js';
 
-const BODY = '#E8966B';
-const BODY_SHADE = '#D67D54';
-const BELLY = '#FBE9DC';
 const EYE_WHITE = '#FFFFFF';
 const PUPIL = '#5A4A42';
-const CHEEK = '#F5B9AE';
-const FOOT = '#D67D54';
+const DEFAULT_PALETTE = CHARACTERS[0].palette;
 
 export class Player {
-  constructor(x, y) {
+  constructor(x, y, palette = DEFAULT_PALETTE) {
     this.spawnX = x;
     this.spawnY = y;
     this.w = PLAYER_W;
     this.h = PLAYER_H;
+    this.palette = palette;
     this.reset();
   }
 
@@ -237,7 +235,7 @@ export class Player {
 
     // Feet
     const footBob = Math.sin(this.legPhase) * 3 * (this.grounded ? 1 : 0);
-    ctx.fillStyle = FOOT;
+    ctx.fillStyle = this.palette.foot;
     ctx.beginPath();
     ctx.ellipse(-baseR * 0.45, -2 + footBob, 8, 6, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -247,21 +245,21 @@ export class Player {
 
     // Body
     const grad = ctx.createRadialGradient(-baseR * 0.3, -baseR * 1.6, baseR * 0.3, 0, -baseR, baseR * 1.6);
-    grad.addColorStop(0, '#F5B98F');
-    grad.addColorStop(1, BODY);
+    grad.addColorStop(0, this.palette.bodyLight);
+    grad.addColorStop(1, this.palette.body);
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.ellipse(0, -baseR, baseR, baseR, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Belly
-    ctx.fillStyle = BELLY;
+    ctx.fillStyle = this.palette.belly;
     ctx.beginPath();
     ctx.ellipse(0, -baseR * 0.78, baseR * 0.62, baseR * 0.52, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Shading crescent
-    ctx.fillStyle = BODY_SHADE;
+    ctx.fillStyle = this.palette.bodyShade;
     ctx.globalAlpha = 0.25;
     ctx.beginPath();
     ctx.ellipse(baseR * 0.35, -baseR * 0.55, baseR * 0.55, baseR * 0.85, 0.4, 0, Math.PI * 2);
@@ -269,7 +267,7 @@ export class Player {
     ctx.globalAlpha = 1;
 
     // Cheeks
-    ctx.fillStyle = CHEEK;
+    ctx.fillStyle = this.palette.cheek;
     ctx.globalAlpha = 0.7;
     ctx.beginPath();
     ctx.ellipse(-baseR * 0.55 * this.facing, -baseR * 0.95, baseR * 0.18, baseR * 0.12, 0, 0, Math.PI * 2);
