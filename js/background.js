@@ -95,6 +95,99 @@ function bird(ctx, x, y, t, color) {
   ctx.stroke();
 }
 
+function palmTree(ctx, x, baseY, scale, trunkColor, leafColor) {
+  ctx.strokeStyle = trunkColor;
+  ctx.lineWidth = 6 * scale;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, baseY);
+  ctx.quadraticCurveTo(x + 6 * scale, baseY - 20 * scale, x + 2 * scale, baseY - 38 * scale);
+  ctx.stroke();
+  ctx.fillStyle = leafColor;
+  const topX = x + 2 * scale;
+  const topY = baseY - 38 * scale;
+  for (let i = 0; i < 5; i++) {
+    const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.ellipse(topX + Math.cos(a) * 16 * scale, topY + Math.sin(a) * 10 * scale, 18 * scale, 7 * scale, a, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function starfish(ctx, x, baseY, scale, color) {
+  ctx.fillStyle = color;
+  ctx.save();
+  ctx.translate(x, baseY - 6 * scale);
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+    const a2 = a + Math.PI / 5;
+    ctx.lineTo(Math.cos(a) * 14 * scale, Math.sin(a) * 14 * scale * 0.6);
+    ctx.lineTo(Math.cos(a2) * 6 * scale, Math.sin(a2) * 6 * scale * 0.6);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function crystalCluster(ctx, x, baseY, scale, color) {
+  ctx.fillStyle = color;
+  const shards = [[-11, 26], [0, 42], [11, 24]];
+  for (const [dx, h] of shards) {
+    const w = 9 * scale;
+    ctx.beginPath();
+    ctx.moveTo(x + dx * scale - w / 2, baseY);
+    ctx.lineTo(x + dx * scale, baseY - h * scale);
+    ctx.lineTo(x + dx * scale + w / 2, baseY);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.beginPath();
+  ctx.moveTo(x - 4 * scale, baseY);
+  ctx.lineTo(x, baseY - 42 * scale);
+  ctx.lineTo(x + 2 * scale, baseY);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function volcanoCone(ctx, x, baseY, scale, bodyColor, glowColor) {
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.moveTo(x - 36 * scale, baseY);
+  ctx.lineTo(x, baseY - 50 * scale);
+  ctx.lineTo(x + 36 * scale, baseY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = glowColor;
+  ctx.beginPath();
+  ctx.moveTo(x - 8 * scale, baseY - 42 * scale);
+  ctx.lineTo(x, baseY - 50 * scale);
+  ctx.lineTo(x + 8 * scale, baseY - 42 * scale);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function cloudIsland(ctx, x, y, scale, cloudColor, underColor) {
+  cloud(ctx, x, y, scale, cloudColor);
+  ctx.fillStyle = underColor;
+  ctx.beginPath();
+  ctx.ellipse(x, y + 9 * scale, 28 * scale, 6 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function planet(ctx, x, y, scale, bodyColor, ringColor) {
+  ctx.strokeStyle = ringColor;
+  ctx.lineWidth = 3 * scale;
+  ctx.beginPath();
+  ctx.ellipse(x, y, 28 * scale, 9 * scale, -0.3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.arc(x, y, 15 * scale, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 export function renderBackground(ctx, theme, opts) {
   const { canvasWidth, canvasHeight, cameraX, scale, visibleWidth, time } = opts;
 
@@ -166,6 +259,24 @@ export function renderBackground(ctx, theme, opts) {
       case 'candy':
         candyCane(ctx, x, baseY, s, '#FFFFFF', theme.groundBody);
         break;
+      case 'jungle':
+        palmTree(ctx, x, baseY, s, '#7A5230', theme.accent2);
+        break;
+      case 'ocean':
+        if (i % 2 === 0) starfish(ctx, x, baseY - 4, s * 0.8, theme.accent2);
+        break;
+      case 'cave':
+        crystalCluster(ctx, x, baseY, s, theme.accent);
+        break;
+      case 'volcano':
+        volcanoCone(ctx, x, baseY, s * 0.85, theme.groundBody, theme.accent);
+        break;
+      case 'sky':
+        cloudIsland(ctx, x, 40 + hash(i * 9) * 60, s, 'rgba(255,255,255,0.9)', theme.accent2);
+        break;
+      case 'space':
+        planet(ctx, x, 40 + hash(i * 9) * 70, s * 0.7, theme.accent2, theme.accent);
+        break;
     }
   });
 
@@ -177,6 +288,29 @@ export function renderBackground(ctx, theme, opts) {
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.beginPath();
       ctx.arc(x + Math.sin(time + i) * 10, y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Rising smoke puffs over the lava
+  if (theme.decor === 'volcano') {
+    const smokeOffset = cameraX * 0.6;
+    drawRepeating(360, smokeOffset, visibleWidth, (x, i) => {
+      if (i % 2 !== 0) return;
+      const rise = (time * 10 + hash(i) * 60) % 70;
+      cloud(ctx, x, WORLD_HEIGHT - 50 - rise, 0.35, `rgba(200,200,200,${0.45 - rise / 200})`);
+    });
+  }
+
+  // Twinkling stars
+  if (theme.decor === 'space') {
+    const starOffset = cameraX * 0.6;
+    drawRepeating(46, starOffset, visibleWidth, (x, i) => {
+      const y = hash(i * 3.7) * WORLD_HEIGHT;
+      const tw = 0.4 + 0.6 * Math.abs(Math.sin(time * 2 + i));
+      ctx.fillStyle = `rgba(255,255,255,${tw})`;
+      ctx.beginPath();
+      ctx.arc(x, y, 1.6, 0, Math.PI * 2);
       ctx.fill();
     });
   }
