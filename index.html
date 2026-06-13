@@ -30,7 +30,7 @@
       <span class="hud-sep">&bull;</span>
       <span id="hud-time">0.0s</span>
     </div>
-    <div class="hud-stars">&#11088; <span id="star-count">0</span>/3</div>
+    <div class="hud-stars">&#11088; <span id="star-count">0</span><span id="star-total">/3</span></div>
   </div>
 
   <!-- Touch controls -->
@@ -52,7 +52,7 @@
       <h1 class="logo">Bounce Quest</h1>
       <p class="tagline">A squishy platforming adventure</p>
       <button id="play-btn" class="btn btn-primary">Play</button>
-      <p class="hint">Arrows to move &bull; JUMP to hop<br />50 levels &bull; 100% offline &#9992;&#65039;</p>
+      <p class="hint">Arrows to move &bull; JUMP to hop<br />100 levels &bull; bonus rounds &bull; 100% offline &#9992;&#65039;</p>
       <a class="privacy-link" href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
     </div>
   </div>
@@ -60,9 +60,27 @@
   <!-- Level select -->
   <div id="level-select" class="overlay screen hidden">
     <div class="panel level-select-panel">
-      <h2>Select Level</h2>
+      <div class="panel-header">
+        <h2>Select Level</h2>
+        <div class="coin-badge">&#129689; <span class="coin-count">0</span></div>
+      </div>
       <div id="level-grid" class="level-grid"></div>
-      <button class="btn btn-secondary back-btn">Back</button>
+      <div class="panel-actions">
+        <button class="btn btn-secondary characters-btn">Characters</button>
+        <button class="btn btn-secondary back-btn">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Character select -->
+  <div id="character-screen" class="overlay screen hidden">
+    <div class="panel character-panel">
+      <div class="panel-header">
+        <h2>Characters</h2>
+        <div class="coin-badge">&#129689; <span class="coin-count">0</span></div>
+      </div>
+      <div id="character-grid" class="character-grid"></div>
+      <button class="btn btn-secondary character-back-btn">Back</button>
     </div>
   </div>
 

@@ -1,5 +1,6 @@
 import { WORLD_HEIGHT, SPRING_VELOCITY, CAMERA_LERP } from './constants.js';
-import { LEVELS, THEMES } from './levels.js';
+import { LEVELS, BONUS_LEVELS, THEMES } from './levels.js';
+import { CHARACTERS } from './characters.js';
 import { Player } from './player.js';
 import { ParticleSystem } from './particles.js';
 import { InputManager } from './input.js';
@@ -24,13 +25,33 @@ function loadProgress() {
         const levels = data.levels.slice(0, LEVELS.length);
         while (levels.length < LEVELS.length) levels.push({ stars: 0, bestTime: null });
         const unlocked = Math.min(Number(data.unlocked) || 0, LEVELS.length - 1);
-        return { unlocked, levels };
+
+        const bonusLevels = Array.isArray(data.bonusLevels) ? data.bonusLevels.slice(0, BONUS_LEVELS.length) : [];
+        while (bonusLevels.length < BONUS_LEVELS.length) bonusLevels.push({ stars: 0 });
+
+        const coins = Math.max(0, Number(data.coins) || 0);
+        const unlockedCharacters = Array.isArray(data.unlockedCharacters) && data.unlockedCharacters.length
+          ? data.unlockedCharacters.filter((id) => CHARACTERS.some((c) => c.id === id))
+          : [];
+        if (!unlockedCharacters.includes(CHARACTERS[0].id)) unlockedCharacters.push(CHARACTERS[0].id);
+        const selectedCharacter = unlockedCharacters.includes(data.selectedCharacter)
+          ? data.selectedCharacter
+          : CHARACTERS[0].id;
+
+        return { unlocked, levels, bonusLevels, coins, unlockedCharacters, selectedCharacter };
       }
     }
   } catch (e) {
     /* ignore */
   }
-  return { unlocked: 0, levels: LEVELS.map(() => ({ stars: 0, bestTime: null })) };
+  return {
+    unlocked: 0,
+    levels: LEVELS.map(() => ({ stars: 0, bestTime: null })),
+    bonusLevels: BONUS_LEVELS.map(() => ({ stars: 0 })),
+    coins: 0,
+    unlockedCharacters: [CHARACTERS[0].id],
+    selectedCharacter: CHARACTERS[0].id,
+  };
 }
 
 function saveProgress(progress) {
@@ -61,8 +82,10 @@ export class Game {
 
     this.state = 'title';
     this.currentLevelIndex = 0;
+    this.isBonus = false;
+    this.currentBonusIndex = null;
     this.level = LEVELS[0];
-    this.player = new Player(this.level.playerStart.x, this.level.playerStart.y);
+    this.player = new Player(this.level.playerStart.x, this.level.playerStart.y, this.getSelectedPalette());
     this.camera = { x: 0 };
     this.collectedStars = new Set();
     this.springOverlap = this.level.springs.map(() => false);
@@ -83,6 +106,7 @@ export class Game {
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 200));
 
     this.renderLevelSelect();
+    this.updateCoinDisplay();
     this.showScreen('title');
 
     this.lastTime = performance.now();
@@ -94,6 +118,7 @@ export class Game {
     this.dom = {
       titleScreen: id('title-screen'),
       levelSelect: id('level-select'),
+      characterScreen: id('character-screen'),
       hud: id('hud'),
       controls: id('controls'),
       pauseScreen: id('pause-screen'),
@@ -101,7 +126,9 @@ export class Game {
       respawnFlash: id('respawn-flash'),
       rotateHint: id('rotate-hint'),
       levelGrid: id('level-grid'),
+      characterGrid: id('character-grid'),
       starCount: id('star-count'),
+      starTotal: id('star-total'),
       hudLevelName: id('hud-level-name'),
       hudTime: id('hud-time'),
       levelToast: id('level-toast'),
@@ -166,6 +193,20 @@ export class Game {
       btn.addEventListener('click', () => {
         a.click();
         this.goToTitle();
+      });
+    });
+
+    document.querySelectorAll('.characters-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        a.click();
+        this.goToCharacterScreen();
+      });
+    });
+
+    document.querySelectorAll('.character-back-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        a.click();
+        this.goToLevelSelect();
       });
     });
 
@@ -312,7 +353,8 @@ export class Game {
     // Goal
     const g = this.level.goal;
     if (aabbOverlap(player.x, player.y, player.w, player.h, g.x - 16, g.y - 130, 32, 130)) {
-      this.completeLevel();
+      if (this.isBonus) this.completeBonusLevel();
+      else this.completeLevel();
       return;
     }
 
@@ -383,8 +425,45 @@ export class Game {
     this.dom.completeNextBtn.classList.toggle('hidden', !hasNext);
   }
 
+  completeBonusLevel() {
+    if (this.state !== 'playing') return;
+    this.state = 'complete';
+    this.audio.complete();
+    this.particles.confetti(this.player.x + this.player.w / 2, this.player.y, 60);
+
+    const idx = this.currentBonusIndex;
+    const starsCollected = this.collectedStars.size;
+    const prevData = this.progress.bonusLevels[idx] || { stars: 0 };
+    this.progress.bonusLevels[idx] = { stars: Math.max(prevData.stars, starsCollected) };
+    this.progress.coins += starsCollected;
+    saveProgress(this.progress);
+
+    this.showBonusCompleteScreen(starsCollected);
+    this.showScreen('complete');
+  }
+
+  showBonusCompleteScreen(starsCollected) {
+    this.dom.completeTitle.textContent = this.level.name + ' Complete!';
+    this.dom.completeStars.innerHTML = `<span class="bonus-coin-result">+${starsCollected} <span class="coin-icon">\u{1FA99}</span></span>`;
+    this.dom.completeTime.textContent = `Total coins: ${this.progress.coins}`;
+    this.dom.completeNextBtn.classList.add('hidden');
+    this.updateCoinDisplay();
+  }
+
   updateHUDStars() {
     this.dom.starCount.textContent = this.collectedStars.size;
+    this.dom.starTotal.classList.toggle('hidden', this.isBonus);
+  }
+
+  updateCoinDisplay() {
+    document.querySelectorAll('.coin-count').forEach((el) => {
+      el.textContent = this.progress.coins;
+    });
+  }
+
+  getSelectedPalette() {
+    const ch = CHARACTERS.find((c) => c.id === this.progress?.selectedCharacter);
+    return (ch || CHARACTERS[0]).palette;
   }
 
   showLevelToast(name) {
@@ -400,9 +479,37 @@ export class Game {
       clearTimeout(this.respawnTimeout);
       this.respawnTimeout = null;
     }
+    this.isBonus = false;
+    this.currentBonusIndex = null;
     this.currentLevelIndex = idx;
     this.level = LEVELS[idx];
-    this.player = new Player(this.level.playerStart.x, this.level.playerStart.y);
+    this.player = new Player(this.level.playerStart.x, this.level.playerStart.y, this.getSelectedPalette());
+    this.collectedStars = new Set();
+    this.springOverlap = this.level.springs.map(() => false);
+    this.springStates = this.level.springs.map(() => 0);
+    this.time = 0;
+    this.runDustTimer = 0;
+    this.camera.x = 0;
+    this.particles.reset();
+    this.respawning = false;
+    this.input.reset();
+    this.state = 'playing';
+    this.updateHUDStars();
+    this.dom.hudLevelName.textContent = this.level.name;
+    this.dom.hudTime.textContent = '0.0s';
+    this.showLevelToast(this.level.name);
+    this.showScreen('playing');
+  }
+
+  startBonusLevel(bonusIdx) {
+    if (this.respawnTimeout) {
+      clearTimeout(this.respawnTimeout);
+      this.respawnTimeout = null;
+    }
+    this.isBonus = true;
+    this.currentBonusIndex = bonusIdx;
+    this.level = BONUS_LEVELS[bonusIdx];
+    this.player = new Player(this.level.playerStart.x, this.level.playerStart.y, this.getSelectedPalette());
     this.collectedStars = new Set();
     this.springOverlap = this.level.springs.map(() => false);
     this.springStates = this.level.springs.map(() => 0);
@@ -421,7 +528,8 @@ export class Game {
   }
 
   restartLevel() {
-    this.startLevel(this.currentLevelIndex);
+    if (this.isBonus) this.startBonusLevel(this.currentBonusIndex);
+    else this.startLevel(this.currentLevelIndex);
   }
 
   pause() {
@@ -452,10 +560,18 @@ export class Game {
     this.showScreen('levelSelect');
   }
 
+  goToCharacterScreen() {
+    this.renderCharacterGrid();
+    this.updateCoinDisplay();
+    this.state = 'characters';
+    this.showScreen('characters');
+  }
+
   showScreen(name) {
     const d = this.dom;
     d.titleScreen.classList.toggle('hidden', name !== 'title');
     d.levelSelect.classList.toggle('hidden', name !== 'levelSelect');
+    d.characterScreen.classList.toggle('hidden', name !== 'characters');
     d.pauseScreen.classList.toggle('hidden', name !== 'paused');
     d.completeScreen.classList.toggle('hidden', name !== 'complete');
     const gameplay = name === 'playing' || name === 'paused';
@@ -493,6 +609,77 @@ export class Game {
         });
       }
       grid.appendChild(btn);
+
+      const bonusIdx = BONUS_LEVELS.findIndex((b) => b.afterMainId === i);
+      if (bonusIdx !== -1) {
+        const bonus = BONUS_LEVELS[bonusIdx];
+        const bonusUnlocked = data.bestTime != null;
+        const bonusData = this.progress.bonusLevels[bonusIdx] || { stars: 0 };
+        const bonusBtn = document.createElement('button');
+        bonusBtn.className = 'level-card bonus-card' + (bonusUnlocked ? '' : ' locked');
+        bonusBtn.innerHTML = `
+          <span class="level-card-num bonus-icon">\u{1F31F}</span>
+          <span class="level-card-name">${bonus.name}</span>
+          <span class="level-card-stars">${bonusData.stars} <span class="coin-icon">\u{1FA99}</span></span>
+          ${!bonusUnlocked ? '<span class="level-card-lock">\u{1F512}</span>' : ''}
+        `;
+        if (bonusUnlocked) {
+          bonusBtn.addEventListener('click', () => {
+            this.audio.click();
+            this.startBonusLevel(bonusIdx);
+          });
+        }
+        grid.appendChild(bonusBtn);
+      }
+    });
+    this.updateCoinDisplay();
+  }
+
+  renderCharacterGrid() {
+    const grid = this.dom.characterGrid;
+    grid.innerHTML = '';
+    CHARACTERS.forEach((ch) => {
+      const unlocked = this.progress.unlockedCharacters.includes(ch.id);
+      const selected = this.progress.selectedCharacter === ch.id;
+      const card = document.createElement('button');
+      card.className = 'character-card' + (selected ? ' selected' : '') + (!unlocked ? ' locked' : '');
+      card.innerHTML = `
+        <canvas class="character-preview" width="64" height="64"></canvas>
+        <span class="character-name">${ch.name}</span>
+        <span class="character-status">${
+          selected ? 'Selected' : unlocked ? 'Select' : `\u{1FA99} ${ch.cost}`
+        }</span>
+      `;
+      grid.appendChild(card);
+
+      const canvas = card.querySelector('canvas');
+      const preview = new Player(14, 14, ch.palette);
+      preview.render(canvas.getContext('2d'));
+
+      card.addEventListener('click', () => {
+        if (selected) return;
+        if (unlocked) {
+          this.audio.click();
+          this.progress.selectedCharacter = ch.id;
+          this.player.palette = ch.palette;
+          saveProgress(this.progress);
+          this.renderCharacterGrid();
+        } else if (this.progress.coins >= ch.cost) {
+          this.audio.star();
+          this.progress.coins -= ch.cost;
+          this.progress.unlockedCharacters.push(ch.id);
+          this.progress.selectedCharacter = ch.id;
+          this.player.palette = ch.palette;
+          saveProgress(this.progress);
+          this.updateCoinDisplay();
+          this.renderCharacterGrid();
+        } else {
+          this.audio.hurt();
+          card.classList.remove('shake');
+          void card.offsetWidth;
+          card.classList.add('shake');
+        }
+      });
     });
   }
 

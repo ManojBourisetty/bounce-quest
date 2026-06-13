@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bounce-quest-v11';
+const CACHE_NAME = 'bounce-quest-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const ASSETS = [
   './js/main.js',
   './js/game.js',
   './js/player.js',
+  './js/characters.js',
   './js/levels.js',
   './js/levelRenderer.js',
   './js/background.js',
