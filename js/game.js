@@ -310,6 +310,9 @@ export class Game {
       this.audio.land();
       this.particles.dust(player.x + player.w / 2, player.y + player.h, 8);
     }
+    if (player.justStepped) {
+      this.audio.footstep();
+    }
     if (player.grounded && Math.abs(player.vx) > 30) {
       this.runDustTimer -= dt;
       if (this.runDustTimer <= 0) {
@@ -660,12 +663,14 @@ export class Game {
         if (selected) return;
         if (unlocked) {
           this.audio.click();
+          this.audio.characterVoice(ch.palette.shape);
           this.progress.selectedCharacter = ch.id;
           this.player.palette = ch.palette;
           saveProgress(this.progress);
           this.renderCharacterGrid();
         } else if (this.progress.coins >= ch.cost) {
           this.audio.star();
+          this.audio.characterVoice(ch.palette.shape);
           this.progress.coins -= ch.cost;
           this.progress.unlockedCharacters.push(ch.id);
           this.progress.selectedCharacter = ch.id;

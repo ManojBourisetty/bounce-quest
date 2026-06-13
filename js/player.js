@@ -45,6 +45,7 @@ export class Player {
 
     this.justJumped = false;
     this.justLanded = false;
+    this.justStepped = false;
     this.dead = false;
   }
 
@@ -55,6 +56,7 @@ export class Player {
   update(dt, input, platforms) {
     this.justJumped = false;
     this.justLanded = false;
+    this.justStepped = false;
 
     const moveDir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
     const accel = this.grounded ? GROUND_ACCEL : AIR_ACCEL;
@@ -129,7 +131,11 @@ export class Player {
 
     // Running leg animation
     if (this.grounded && Math.abs(this.vx) > 4) {
+      const prevPhase = this.legPhase;
       this.legPhase += dt * (5 + Math.abs(this.vx) / 28);
+      if (Math.floor(this.legPhase / Math.PI) > Math.floor(prevPhase / Math.PI)) {
+        this.justStepped = true;
+      }
     } else {
       this.legPhase += dt * 1.2;
     }
