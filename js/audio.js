@@ -108,6 +108,49 @@ export class AudioManager {
     this.tone(900, 0.18, { type: 'sine', gain: 0.1, sweep: -700 });
   }
 
+  footstep() {
+    const pitch = 80 + Math.random() * 20;
+    this.tone(pitch, 0.05, { type: 'sine', gain: 0.06, sweep: -30 });
+  }
+
+  // Short, playful "voice" blip for each animal character, played when
+  // it's selected on the character screen.
+  characterVoice(shape) {
+    switch (shape) {
+      case 'bear':
+        this.tone(150, 0.2, { type: 'sine', gain: 0.22, sweep: -40 });
+        break;
+      case 'bunny':
+        this.tone(700, 0.06, { type: 'square', gain: 0.15, sweep: 300 });
+        this.tone(900, 0.08, { type: 'square', gain: 0.15, sweep: 400, delay: 0.06 });
+        break;
+      case 'turtle':
+        this.tone(110, 0.32, { type: 'sine', gain: 0.2, sweep: -20 });
+        break;
+      case 'cat':
+        this.tone(500, 0.14, { type: 'sawtooth', gain: 0.15, sweep: 150 });
+        this.tone(650, 0.12, { type: 'sawtooth', gain: 0.12, sweep: -200, delay: 0.1 });
+        break;
+      case 'duck':
+        this.tone(320, 0.12, { type: 'square', gain: 0.18, sweep: -120 });
+        this.tone(300, 0.1, { type: 'square', gain: 0.14, sweep: -100, delay: 0.1 });
+        break;
+      case 'owl':
+        this.tone(260, 0.2, { type: 'sine', gain: 0.18 });
+        this.tone(220, 0.24, { type: 'sine', gain: 0.18, delay: 0.18 });
+        break;
+      case 'fox':
+        this.tone(750, 0.08, { type: 'triangle', gain: 0.18, sweep: 200 });
+        this.tone(850, 0.06, { type: 'triangle', gain: 0.15, sweep: 100, delay: 0.07 });
+        break;
+      case 'koala':
+        this.tone(160, 0.22, { type: 'sawtooth', gain: 0.18, sweep: -50 });
+        break;
+      default:
+        this.click();
+    }
+  }
+
   startMusic() {
     if (!this.ctx || this.musicPlaying) return;
     this.musicPlaying = true;
