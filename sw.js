@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bounce-quest-v12';
+const CACHE_NAME = 'bounce-quest-v13';
 const ASSETS = [
   './',
   './index.html',
