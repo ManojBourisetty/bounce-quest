@@ -233,6 +233,36 @@ export class Player {
     ctx.rotate(this.tilt);
     ctx.scale(this.squashX, this.squashY);
 
+    const shape = this.palette.shape || 'bear';
+
+    // Tail (drawn behind the body)
+    if (shape === 'fox') {
+      const tailSide = -this.facing;
+      ctx.save();
+      ctx.translate(tailSide * baseR * 0.95, -baseR * 0.5);
+      ctx.rotate(tailSide * 0.35);
+      ctx.fillStyle = this.palette.body;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, baseR * 0.35, baseR * 0.75, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = this.palette.belly;
+      ctx.beginPath();
+      ctx.ellipse(0, baseR * 0.35, baseR * 0.24, baseR * 0.32, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Shell (drawn behind the body)
+    if (shape === 'turtle') {
+      ctx.fillStyle = this.palette.bodyShade;
+      ctx.beginPath();
+      ctx.ellipse(0, -baseR * 0.9, baseR * 1.38, baseR * 1.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Ears (drawn behind the body so the base is hidden)
+    this.drawEars(ctx, baseR, shape);
+
     // Feet
     const footBob = Math.sin(this.legPhase) * 3 * (this.grounded ? 1 : 0);
     ctx.fillStyle = this.palette.foot;
@@ -257,6 +287,18 @@ export class Player {
     ctx.beginPath();
     ctx.ellipse(0, -baseR * 0.78, baseR * 0.62, baseR * 0.52, 0, 0, Math.PI * 2);
     ctx.fill();
+
+    // Shell scute pattern
+    if (shape === 'turtle') {
+      ctx.fillStyle = this.palette.bodyShade;
+      ctx.globalAlpha = 0.45;
+      this.drawHexagon(ctx, 0, -baseR * 0.85, baseR * 0.30);
+      this.drawHexagon(ctx, -baseR * 0.55, -baseR * 0.62, baseR * 0.24);
+      this.drawHexagon(ctx, baseR * 0.55, -baseR * 0.62, baseR * 0.24);
+      this.drawHexagon(ctx, -baseR * 0.40, -baseR * 1.20, baseR * 0.22);
+      this.drawHexagon(ctx, baseR * 0.40, -baseR * 1.20, baseR * 0.22);
+      ctx.globalAlpha = 1;
+    }
 
     // Shading crescent
     ctx.fillStyle = this.palette.bodyShade;
@@ -300,21 +342,144 @@ export class Player {
       }
     }
 
-    // Mouth
-    ctx.strokeStyle = '#8C5A42';
-    ctx.lineWidth = Math.max(1.5, baseR * 0.07);
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    if (!this.grounded) {
-      // open "o" while airborne
-      ctx.ellipse(eyeDir * 0.5, -baseR * 1.05, baseR * 0.14, baseR * 0.18, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#8C5A42';
+    // Mouth / beak
+    if (shape === 'duck') {
+      const beakW = baseR * 0.42;
+      const beakH = this.grounded ? baseR * 0.16 : baseR * 0.24;
+      ctx.fillStyle = '#F4A93B';
+      ctx.beginPath();
+      ctx.ellipse(eyeDir * 0.5, -baseR * 1.02, beakW, beakH, 0, 0, Math.PI * 2);
       ctx.fill();
-    } else {
-      ctx.arc(eyeDir * 0.5, -baseR * 1.1, baseR * 0.22, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.strokeStyle = '#D9842A';
+      ctx.lineWidth = Math.max(1, baseR * 0.04);
+      ctx.beginPath();
+      ctx.moveTo(eyeDir * 0.5 - beakW, -baseR * 1.02);
+      ctx.lineTo(eyeDir * 0.5 + beakW, -baseR * 1.02);
       ctx.stroke();
+    } else {
+      ctx.strokeStyle = '#8C5A42';
+      ctx.lineWidth = Math.max(1.5, baseR * 0.07);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      if (!this.grounded) {
+        // open "o" while airborne
+        ctx.ellipse(eyeDir * 0.5, -baseR * 1.05, baseR * 0.14, baseR * 0.18, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#8C5A42';
+        ctx.fill();
+      } else {
+        ctx.arc(eyeDir * 0.5, -baseR * 1.1, baseR * 0.22, 0.15 * Math.PI, 0.85 * Math.PI);
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
+  }
+
+  drawEars(ctx, baseR, shape) {
+    const p = this.palette;
+    switch (shape) {
+      case 'bear':
+        for (const side of [-1, 1]) {
+          ctx.fillStyle = p.bodyShade;
+          ctx.beginPath();
+          ctx.ellipse(side * baseR * 0.62, -baseR * 1.78, baseR * 0.30, baseR * 0.30, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = p.belly;
+          ctx.beginPath();
+          ctx.ellipse(side * baseR * 0.62, -baseR * 1.78, baseR * 0.15, baseR * 0.15, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      case 'bunny':
+        for (const side of [-1, 1]) {
+          ctx.save();
+          ctx.translate(side * baseR * 0.40, -baseR * 1.65);
+          ctx.rotate(side * 0.18);
+          ctx.fillStyle = p.body;
+          ctx.beginPath();
+          ctx.ellipse(0, -baseR * 0.55, baseR * 0.22, baseR * 0.62, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = p.cheek;
+          ctx.beginPath();
+          ctx.ellipse(0, -baseR * 0.50, baseR * 0.11, baseR * 0.42, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        break;
+      case 'cat':
+        for (const side of [-1, 1]) {
+          ctx.fillStyle = p.body;
+          ctx.beginPath();
+          ctx.moveTo(side * baseR * 0.35, -baseR * 1.55);
+          ctx.lineTo(side * baseR * 0.85, -baseR * 2.15);
+          ctx.lineTo(side * baseR * 1.0, -baseR * 1.35);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = p.cheek;
+          ctx.beginPath();
+          ctx.moveTo(side * baseR * 0.45, -baseR * 1.58);
+          ctx.lineTo(side * baseR * 0.78, -baseR * 2.0);
+          ctx.lineTo(side * baseR * 0.88, -baseR * 1.42);
+          ctx.closePath();
+          ctx.fill();
+        }
+        break;
+      case 'owl':
+        for (const side of [-1, 1]) {
+          ctx.fillStyle = p.bodyShade;
+          ctx.beginPath();
+          ctx.moveTo(side * baseR * 0.08, -baseR * 1.58);
+          ctx.lineTo(side * baseR * 0.42, -baseR * 2.35);
+          ctx.lineTo(side * baseR * 0.58, -baseR * 1.5);
+          ctx.closePath();
+          ctx.fill();
+        }
+        break;
+      case 'fox':
+        for (const side of [-1, 1]) {
+          ctx.fillStyle = p.body;
+          ctx.beginPath();
+          ctx.moveTo(side * baseR * 0.30, -baseR * 1.5);
+          ctx.lineTo(side * baseR * 0.95, -baseR * 2.25);
+          ctx.lineTo(side * baseR * 1.05, -baseR * 1.30);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = p.belly;
+          ctx.beginPath();
+          ctx.moveTo(side * baseR * 0.42, -baseR * 1.55);
+          ctx.lineTo(side * baseR * 0.88, -baseR * 2.05);
+          ctx.lineTo(side * baseR * 0.95, -baseR * 1.40);
+          ctx.closePath();
+          ctx.fill();
+        }
+        break;
+      case 'koala':
+        for (const side of [-1, 1]) {
+          ctx.fillStyle = p.body;
+          ctx.beginPath();
+          ctx.ellipse(side * baseR * 1.05, -baseR * 1.35, baseR * 0.40, baseR * 0.46, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = p.belly;
+          ctx.beginPath();
+          ctx.ellipse(side * baseR * 1.05, -baseR * 1.35, baseR * 0.20, baseR * 0.24, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  drawHexagon(ctx, x, y, r) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i - Math.PI / 2;
+      const px = x + Math.cos(angle) * r;
+      const py = y + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
   }
 }
