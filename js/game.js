@@ -280,8 +280,16 @@ export class Game {
   }
 
   updatePlaying(dt) {
-    this.time += dt;
-    this.dom.hudTime.textContent = this.time.toFixed(1) + 's';
+    // The timer only starts once the player first moves or jumps, so
+    // reading the level layout costs nothing.
+    if (!this.timerStarted &&
+        (this.input.left || this.input.right || this.input.jumpHeld || this.input.jumpPressed)) {
+      this.timerStarted = true;
+    }
+    if (this.timerStarted) {
+      this.time += dt;
+      this.dom.hudTime.textContent = this.time.toFixed(1) + 's';
+    }
 
     for (const p of this.level.platforms) {
       if (p.type === 'moving') {
@@ -491,6 +499,7 @@ export class Game {
     this.springOverlap = this.level.springs.map(() => false);
     this.springStates = this.level.springs.map(() => 0);
     this.time = 0;
+    this.timerStarted = false;
     this.runDustTimer = 0;
     this.camera.x = 0;
     this.particles.reset();
@@ -517,6 +526,7 @@ export class Game {
     this.springOverlap = this.level.springs.map(() => false);
     this.springStates = this.level.springs.map(() => 0);
     this.time = 0;
+    this.timerStarted = false;
     this.runDustTimer = 0;
     this.camera.x = 0;
     this.particles.reset();
