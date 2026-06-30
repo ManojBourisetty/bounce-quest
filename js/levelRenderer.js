@@ -50,7 +50,7 @@ function drawPlatform(ctx, p, theme) {
 }
 
 function drawSpike(ctx, s) {
-  ctx.fillStyle = '#E08585';
+  ctx.fillStyle = '#B23A2E';
   const teeth = Math.max(1, Math.round(s.w / 18));
   const tw = s.w / teeth;
   for (let i = 0; i < teeth; i++) {

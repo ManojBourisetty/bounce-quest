@@ -5,8 +5,11 @@
 export const GROUND_Y = 360;
 const GROUND_THICK = 140;
 
-function ground(x, w) {
-  return { type: 'ground', x, y: GROUND_Y, w, h: GROUND_THICK };
+// Ground segments can sit at different heights ("top"); their bottom always
+// reaches the same depth, so a raised segment reads as a solid hill rather
+// than a floating slab.
+function ground(x, w, top = GROUND_Y) {
+  return { type: 'ground', x, y: top, w, h: GROUND_THICK + (GROUND_Y - top) };
 }
 function block(x, y, w, h) {
   return { type: 'block', x, y, w, h };
@@ -38,6 +41,14 @@ function mulberry32(seed) {
 
 const SAFE_GAP = 120;     // pit width between ground segments
 const WIDE_GAP = 140;     // an extra-wide pit, used occasionally in later worlds
+const UP_GAP = 56;        // narrower pit used before a step UP, so the rise stays jumpable
+
+// Ground segments rise and fall across the level to give each one a distinct
+// silhouette. Step-ups are kept small (and paired with a narrow gap) so a
+// single jump always clears them; step-downs can be steeper since falling is
+// free. Heights stay within a band that keeps everything on screen.
+const ELEV_MIN_TOP = GROUND_Y - 156;
+const ELEV_MAX_TOP = GROUND_Y + 24;
 const SEG_MIN = 360;      // minimum ground segment width
 const SEG_MAX = 560;      // maximum ground segment width
 const SPIKE_W = 40;
@@ -80,15 +91,34 @@ function generateLevel(id, theme, name, world, totalLevels) {
   // requiring a longer running jump (chance grows from 0 to 30%).
   const wideGapChance = advanced ? Math.max(0, (t - 0.5) * 0.6) : 0;
 
+  // Elevation deltas grow gently with difficulty: early worlds roll softly,
+  // later worlds have taller climbs and steeper drops.
+  const upMax = Math.round(34 + t * 18);   // 34..52 px climb per step
+  const downMax = Math.round(44 + t * 54); // 44..98 px drop per step
+
   let x = 0;
+  let top = GROUND_Y;
   for (let i = 0; i < numSegments; i++) {
     const width = Math.round(SEG_MIN + rng() * (SEG_MAX - SEG_MIN));
-    segments.push({ x, width });
-    platforms.push(ground(x, width));
+    segments.push({ x, width, top });
+    platforms.push(ground(x, width, top));
     x += width;
     if (i < numSegments - 1) {
-      const gap = advanced && rng() < wideGapChance ? WIDE_GAP : SAFE_GAP;
+      // Pick the next segment's height, biased back toward the baseline when
+      // we drift far from it so levels keep rolling instead of running away.
+      const below = top > GROUND_Y;
+      const above = top < GROUND_Y;
+      const goUp = above ? rng() < 0.3 : below ? rng() < 0.85 : rng() < 0.5;
+      let nextTop;
+      if (goUp) {
+        nextTop = Math.max(ELEV_MIN_TOP, top - Math.round(18 + rng() * (upMax - 18)));
+      } else {
+        nextTop = Math.min(ELEV_MAX_TOP, top + Math.round(18 + rng() * (downMax - 18)));
+      }
+      const stepUp = nextTop < top - 1;
+      const gap = stepUp ? UP_GAP : (advanced && rng() < wideGapChance ? WIDE_GAP : SAFE_GAP);
       x += gap;
+      top = nextTop;
     }
   }
   const levelWidth = x;
@@ -113,7 +143,7 @@ function generateLevel(id, theme, name, world, totalLevels) {
       const minX = seg.x + SPIKE_MARGIN;
       const maxX = seg.x + seg.width - SPIKE_MARGIN - spikeW;
       const sx = Math.round(minX + rng() * Math.max(0, maxX - minX));
-      spikes.push(spike(sx, spikeW));
+      spikes.push(spike(sx, spikeW, seg.top));
       hasSpike = true;
     }
 
@@ -125,7 +155,7 @@ function generateLevel(id, theme, name, world, totalLevels) {
     if (!isFirst && !isLast && t >= SPRING_MIN_T && seg.width >= SPRING_SEG_MIN && rng() < SPRING_PROB) {
       const maxOffset = seg.width - SPRING_MARGIN - SPRING_LAND_CLEAR;
       const sx = Math.round(seg.x + SPRING_MARGIN + rng() * Math.max(0, maxOffset));
-      springs.push(spring(sx, GROUND_Y));
+      springs.push(spring(sx, seg.top));
       return;
     }
 
@@ -139,7 +169,7 @@ function generateLevel(id, theme, name, world, totalLevels) {
       const maxX = seg.x + seg.width - BLOCK_MARGIN - bw;
       const bx = Math.round(minX + rng() * Math.max(0, maxX - minX));
       const bh = rng() < 0.5 ? 20 : 24;
-      const by = Math.round(GROUND_Y - 90 - rng() * 60);
+      const by = Math.round(seg.top - 90 - rng() * 60);
 
       if (t >= MOVING_MIN_T && rng() < movingProb) {
         const amplitude = Math.round(12 + rng() * 10);
@@ -162,8 +192,8 @@ function generateLevel(id, theme, name, world, totalLevels) {
     const seg = segments[segIndex];
     const sx = Math.round(seg.x + seg.width / 2);
     const sy = advanced && i === 1
-      ? Math.round(GROUND_Y - 95 - rng() * 25)
-      : Math.round(GROUND_Y - 60 - rng() * 40);
+      ? Math.round(seg.top - 95 - rng() * 25)
+      : Math.round(seg.top - 60 - rng() * 40);
     stars.push(star(sx, sy));
   });
 
@@ -178,7 +208,7 @@ function generateLevel(id, theme, name, world, totalLevels) {
     spikes,
     springs,
     stars,
-    goal: { x: levelWidth - 60, y: GROUND_Y },
+    goal: { x: levelWidth - 60, y: segments[numSegments - 1].top },
   };
 }
 
