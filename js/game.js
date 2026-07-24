@@ -574,6 +574,16 @@ export class Game {
     this.renderLevelSelect();
     this.state = 'levelSelect';
     this.showScreen('levelSelect');
+    this.scrollToCurrentLevel();
+  }
+
+  // Jump the level list straight to the furthest level the player has
+  // reached, so returning to level select doesn't dump them back at level 1
+  // with a long scroll ahead of them.
+  scrollToCurrentLevel() {
+    const idx = Math.min(this.progress.unlocked, LEVELS.length - 1);
+    const card = this.dom.levelGrid.querySelector(`[data-level-index="${idx}"]`);
+    if (card) card.scrollIntoView({ block: 'center' });
   }
 
   goToCharacterScreen() {
@@ -612,6 +622,7 @@ export class Game {
       const data = this.progress.levels[i] || { stars: 0, bestTime: null };
       const btn = document.createElement('button');
       btn.className = 'level-card' + (locked ? ' locked' : '');
+      btn.dataset.levelIndex = i;
       btn.innerHTML = `
         <span class="level-card-num">${i + 1}</span>
         <span class="level-card-name">${lvl.name}</span>
