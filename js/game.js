@@ -393,6 +393,9 @@ export class Game {
       this.springOverlap = this.level.springs.map(() => false);
       const maxCam = Math.max(0, this.level.width - this.visibleWidth);
       this.camera.x = clamp(this.player.x - this.visibleWidth / 2, 0, maxCam);
+      this.time = 0;
+      this.timerStarted = false;
+      this.dom.hudTime.textContent = '0.0s';
       this.respawning = false;
     }, 400);
   }
