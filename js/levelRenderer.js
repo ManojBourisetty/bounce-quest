@@ -104,14 +104,13 @@ function drawStar(ctx, star, time, index, collected) {
   ctx.save();
   ctx.translate(star.x, star.y + bob);
   ctx.rotate(rot);
-  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, star.r * 2.2);
-  glow.addColorStop(0, 'rgba(240,201,85,0.55)');
+  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, star.r * 1.8);
+  glow.addColorStop(0, 'rgba(240,201,85,0.4)');
   glow.addColorStop(1, 'rgba(240,201,85,0)');
   ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.arc(0, 0, star.r * 2.2, 0, Math.PI * 2);
+  ctx.arc(0, 0, star.r * 1.8, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#F0C955';
   ctx.beginPath();
   for (let i = 0; i < 5; i++) {
     const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
@@ -120,6 +119,12 @@ function drawStar(ctx, star, time, index, collected) {
     ctx.lineTo(Math.cos(a2) * star.r * 0.45, Math.sin(a2) * star.r * 0.45);
   }
   ctx.closePath();
+  // A dark outline keeps the star readable even against a bright, similarly
+  // warm-toned sky (e.g. the sunset theme) where the fill alone blends in.
+  ctx.strokeStyle = 'rgba(120,68,20,0.65)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#F0C955';
   ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.beginPath();
