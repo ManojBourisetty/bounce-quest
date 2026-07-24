@@ -54,7 +54,7 @@ const SEG_MAX = 560;      // maximum ground segment width
 const SPIKE_W = 40;
 const WIDE_SPIKE_W = 76;  // a wider hazard, used occasionally in later worlds
 const SPIKE_MARGIN = 120; // min distance from a segment edge to a spike
-const BLOCK_MARGIN = 100; // min distance from a segment edge to a decor block
+const BRIDGE_MARGIN = 12; // min gap from a pit's edge to a bridging platform
 
 // Springs/moving platforms only start showing up in later worlds, and
 // springs need a wide, flat landing zone for their bounce arc (~240px of
@@ -66,9 +66,17 @@ const SPRING_SEG_MIN = 400;  // minimum segment width that can host a spring
 const SPRING_MARGIN = 60;    // min distance from segment start to the spring
 const SPRING_LAND_CLEAR = 300; // space reserved after the spring for the bounce arc to land
 
+// A normal jump clears about 110px (JUMP_VELOCITY^2 / (2 * GRAVITY)); a
+// star perched higher than that is out of reach without a spring, so the
+// spring under it is obviously "what that's for" rather than a random prop.
+const SPRING_STAR_MIN_LIFT = 150;
+const SPRING_STAR_LIFT_RANGE = 30;
+
+const BRIDGE_PROB = 0.4; // chance a jumpable pit also gets an optional aerial shortcut
+
 // Procedurally builds a level: a chain of ground segments separated by
-// pits, with the occasional spike and floating decor block placed well
-// clear of every segment edge so the gap-jumps stay reliable.
+// pits, with the occasional spike, an optional bridge platform spanning a
+// pit, and springs that always sit under a hard-to-reach star.
 //
 // `t` is the level's position in the overall campaign (0 = easiest, 1 =
 // hardest), used to smoothly ramp up hazard density across every level.
@@ -86,6 +94,7 @@ function generateLevel(id, theme, name, world, totalLevels) {
   const springs = [];
   const stars = [];
   const segments = [];
+  const gaps = []; // pits between segments; a subset get an optional bridge platform
 
   // Advanced worlds occasionally widen a pit beyond the usual SAFE_GAP,
   // requiring a longer running jump (chance grows from 0 to 30%).
@@ -117,6 +126,7 @@ function generateLevel(id, theme, name, world, totalLevels) {
       }
       const stepUp = nextTop < top - 1;
       const gap = stepUp ? UP_GAP : (advanced && rng() < wideGapChance ? WIDE_GAP : SAFE_GAP);
+      gaps.push({ x, width: gap, fromTop: top, toTop: nextTop, stepUp });
       x += gap;
       top = nextTop;
     }
@@ -124,8 +134,6 @@ function generateLevel(id, theme, name, world, totalLevels) {
   const levelWidth = x;
 
   const spikeProb = 0.35 + t * 0.45;
-  const blockProb = 0.45;
-
   const movingProb = Math.min(0.5, Math.max(0, 0.15 + t * 0.35));
 
   // Advanced worlds occasionally use a wider spike (chance grows from 0 to
@@ -133,68 +141,74 @@ function generateLevel(id, theme, name, world, totalLevels) {
   const wideSpikeChance = advanced ? Math.max(0, (t - 0.5) * 0.6) : 0;
   const horizontalMoveChance = advanced ? 0.4 : 0;
 
+  const segHasSpike = new Array(numSegments).fill(false);
   segments.forEach((seg, i) => {
     const isFirst = i === 0;
     const isLast = i === numSegments - 1;
-
-    let hasSpike = false;
     if (!isFirst && !isLast && rng() < spikeProb) {
       const spikeW = advanced && rng() < wideSpikeChance ? WIDE_SPIKE_W : SPIKE_W;
       const minX = seg.x + SPIKE_MARGIN;
       const maxX = seg.x + seg.width - SPIKE_MARGIN - spikeW;
       const sx = Math.round(minX + rng() * Math.max(0, maxX - minX));
       spikes.push(spike(sx, spikeW, seg.top));
-      hasSpike = true;
-    }
-
-    if (hasSpike) return;
-
-    // Springs bounce the player straight up; only placed in wide,
-    // hazard-free segments in later worlds so the bounce arc has room to
-    // land back on solid ground.
-    if (!isFirst && !isLast && t >= SPRING_MIN_T && seg.width >= SPRING_SEG_MIN && rng() < SPRING_PROB) {
-      const maxOffset = seg.width - SPRING_MARGIN - SPRING_LAND_CLEAR;
-      const sx = Math.round(seg.x + SPRING_MARGIN + rng() * Math.max(0, maxOffset));
-      springs.push(spring(sx, seg.top));
-      return;
-    }
-
-    // Decor blocks (some of which oscillate as moving platforms in later
-    // worlds) only go in spike- and spring-free segments: the bot never
-    // jumps mid-segment there, so it can't land on one and get stranded.
-    if (rng() < blockProb) {
-      const maxBlockW = seg.width - BLOCK_MARGIN * 2;
-      const bw = Math.round(Math.min(maxBlockW, 80 + rng() * 70));
-      const minX = seg.x + BLOCK_MARGIN;
-      const maxX = seg.x + seg.width - BLOCK_MARGIN - bw;
-      const bx = Math.round(minX + rng() * Math.max(0, maxX - minX));
-      const bh = rng() < 0.5 ? 20 : 24;
-      const by = Math.round(seg.top - 90 - rng() * 60);
-
-      if (t >= MOVING_MIN_T && rng() < movingProb) {
-        const amplitude = Math.round(12 + rng() * 10);
-        const speed = 1 + rng();
-        const phase = rng() * Math.PI * 2;
-        let axis = 'y';
-        if (advanced && rng() < horizontalMoveChance) axis = 'x';
-        platforms.push(moving(bx, by, bw, bh, axis, amplitude, speed, phase));
-      } else {
-        platforms.push(block(bx, by, bw, bh));
-      }
+      segHasSpike[i] = true;
     }
   });
 
-  // Three stars at roughly 20% / 50% / 80% through the level, each within
-  // easy jump reach above the ground. In advanced worlds the middle star
-  // sits near the top of a full jump arc for an extra bit of precision.
+  // Floating "bar" platforms now do a job instead of hovering over ground
+  // that's already walkable: they bridge a pit as an optional aerial
+  // shortcut. The pit is always clearable with a normal jump on its own
+  // (that's unchanged), so the bridge is a bonus route - but it gives the
+  // platform an obvious reason to be exactly where it is. Narrow step-up
+  // pits are skipped; they're already a tight single-jump gap.
+  gaps.forEach((g) => {
+    if (g.stepUp) return;
+    if (rng() >= BRIDGE_PROB) return;
+    const anchorTop = Math.min(g.fromTop, g.toTop);
+    const maxW = g.width - BRIDGE_MARGIN * 2;
+    const bw = Math.round(Math.min(maxW, 80 + rng() * 70));
+    const bx = Math.round(g.x + (g.width - bw) / 2);
+    const by = Math.round(anchorTop - 90 - rng() * 60);
+    const bh = rng() < 0.5 ? 20 : 24;
+
+    if (t >= MOVING_MIN_T && rng() < movingProb) {
+      const amplitude = Math.round(12 + rng() * 10);
+      const speed = 1 + rng();
+      const phase = rng() * Math.PI * 2;
+      const axis = advanced && rng() < horizontalMoveChance ? 'x' : 'y';
+      platforms.push(moving(bx, by, bw, bh, axis, amplitude, speed, phase));
+    } else {
+      platforms.push(block(bx, by, bw, bh));
+    }
+  });
+
+  // Three stars at roughly 20% / 50% / 80% through the level. A spring only
+  // ever appears directly beneath one of these stars, perched above normal
+  // jump range - so every spring has an obvious purpose (reach that star)
+  // instead of launching into empty sky for no reason. Otherwise a star
+  // sits within easy jump reach above the ground, as before (with the
+  // advanced-world middle star sitting a bit higher for precision).
   [0.2, 0.5, 0.8].forEach((frac, i) => {
     const segIndex = Math.min(numSegments - 1, Math.floor(frac * numSegments));
     const seg = segments[segIndex];
-    const sx = Math.round(seg.x + seg.width / 2);
-    const sy = advanced && i === 1
-      ? Math.round(seg.top - 95 - rng() * 25)
-      : Math.round(seg.top - 60 - rng() * 40);
-    stars.push(star(sx, sy));
+    const isFirst = segIndex === 0;
+    const isLast = segIndex === numSegments - 1;
+    const canSpring = t >= SPRING_MIN_T && !isFirst && !isLast &&
+      !segHasSpike[segIndex] && seg.width >= SPRING_SEG_MIN && rng() < SPRING_PROB;
+
+    if (canSpring) {
+      const maxOffset = seg.width - SPRING_MARGIN - SPRING_LAND_CLEAR;
+      const sx = Math.round(seg.x + SPRING_MARGIN + rng() * Math.max(0, maxOffset));
+      springs.push(spring(sx, seg.top));
+      const sy = Math.round(seg.top - SPRING_STAR_MIN_LIFT - rng() * SPRING_STAR_LIFT_RANGE);
+      stars.push(star(sx + 16, sy));
+    } else {
+      const sx = Math.round(seg.x + seg.width / 2);
+      const sy = advanced && i === 1
+        ? Math.round(seg.top - 95 - rng() * 25)
+        : Math.round(seg.top - 60 - rng() * 40);
+      stars.push(star(sx, sy));
+    }
   });
 
   return {

@@ -9,47 +9,6 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Floating decor blocks have nothing visibly holding them up, which reads as
-// a random bar dropped in mid-air. A pair of short chains fading into the
-// sky above (like Mario's suspended platforms) gives them a reason to float.
-function drawChainSupport(ctx, x, topY) {
-  const grad = ctx.createLinearGradient(x, topY - 20, x, topY);
-  grad.addColorStop(0, 'rgba(70,55,40,0)');
-  grad.addColorStop(1, 'rgba(70,55,40,0.5)');
-  ctx.strokeStyle = grad;
-  ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  ctx.setLineDash([3, 3]);
-  ctx.beginPath();
-  ctx.moveTo(x, topY - 20);
-  ctx.lineTo(x, topY);
-  ctx.stroke();
-  ctx.setLineDash([]);
-}
-
-// A riveted-panel texture (in the spirit of Mario's brick/crate blocks) so
-// the block reads as a built platform rather than a plain colored bar.
-function drawCrateTexture(ctx, x, y, w, h) {
-  const cols = Math.max(2, Math.round(w / 30));
-  const colW = w / cols;
-  ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-  ctx.lineWidth = 1.5;
-  for (let i = 1; i < cols; i++) {
-    const lx = x + i * colW;
-    ctx.beginPath();
-    ctx.moveTo(lx, y + 3);
-    ctx.lineTo(lx, y + h - 3);
-    ctx.stroke();
-  }
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  for (let i = 0; i < cols; i++) {
-    const cx = x + i * colW + colW / 2;
-    ctx.beginPath();
-    ctx.arc(cx, y + h / 2, 1.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
 function drawPlatform(ctx, p, theme) {
   const topH = 14;
   if (p.type === 'ground') {
@@ -66,9 +25,6 @@ function drawPlatform(ctx, p, theme) {
       ctx.fill();
     }
   } else if (p.type === 'block' || p.type === 'moving') {
-    drawChainSupport(ctx, p.x + 10, p.y);
-    drawChainSupport(ctx, p.x + p.w - 10, p.y);
-
     ctx.save();
     if (p.type === 'moving') {
       ctx.shadowColor = 'rgba(0,0,0,0.18)';
@@ -82,7 +38,6 @@ function drawPlatform(ctx, p, theme) {
     ctx.fillStyle = theme.groundTop;
     roundRect(ctx, p.x, p.y, p.w, Math.min(topH, p.h * 0.6), 8);
     ctx.fill();
-    drawCrateTexture(ctx, p.x, p.y, p.w, p.h);
     if (p.type === 'moving') {
       ctx.strokeStyle = 'rgba(255,255,255,0.6)';
       ctx.lineWidth = 2;
@@ -124,33 +79,6 @@ function drawSpring(ctx, s, time, bounceTime) {
   const baseY = s.y + s.h;
   const squish = bounceTime > 0 ? Math.max(0.35, 1 - bounceTime * 6) : 1;
   const h = s.h * squish;
-
-  // A painted launch-pad ring plus upward chevrons mark the spring as a
-  // deliberate "bounce here" spot, so it reads as intentional even when
-  // there's nothing else nearby to explain why it's there.
-  ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  ctx.beginPath();
-  ctx.ellipse(cx, baseY + 2, s.w * 0.8, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(cx, baseY, s.w * 0.66, Math.PI * 0.15, Math.PI * 0.85);
-  ctx.stroke();
-
-  const chevronBob = (Math.sin(time * 3) + 1) * 3;
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-  ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  [0, 1].forEach((n) => {
-    const cy = baseY - h - 16 - n * 12 - chevronBob;
-    ctx.beginPath();
-    ctx.moveTo(cx - 7, cy + 5);
-    ctx.lineTo(cx, cy - 4);
-    ctx.lineTo(cx + 7, cy + 5);
-    ctx.stroke();
-  });
-
   ctx.fillStyle = '#F0C975';
   roundRect(ctx, s.x, baseY - 6, s.w, 6, 2);
   ctx.fill();
