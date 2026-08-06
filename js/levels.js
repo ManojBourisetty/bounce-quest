@@ -78,16 +78,18 @@ const BRIDGE_PROB = 0.4; // chance a jumpable pit also gets an optional aerial s
 // pits, with the occasional spike, an optional bridge platform spanning a
 // pit, and springs that always sit under a hard-to-reach star.
 //
-// `t` is the level's position in the overall campaign (0 = easiest, 1 =
-// hardest), used to smoothly ramp up hazard density across every level.
+// `t` is the level's position on the difficulty curve (0 = easiest, 1 =
+// as hard as the original 100-level campaign ever got; worlds added later
+// can push past 1 to keep ramping). It's passed in explicitly rather than
+// derived from `id`/level count here, so adding more levels later can't
+// retroactively reshuffle any existing level's layout.
 // Worlds 7-12 (id >= 50) are "advanced": on top of that curve they're a
 // little longer and can mix in wider pits, wider spikes, and sideways
 // moving platforms for extra variety.
-function generateLevel(id, theme, name, world, totalLevels) {
+function generateLevel(id, theme, name, world, t) {
   const rng = mulberry32(1000 + id);
-  const t = totalLevels > 1 ? id / (totalLevels - 1) : 0;
   const advanced = id >= 50;
-  const numSegments = 8 + Math.floor(t * 4) + (advanced ? 2 : 0); // 8..12, or 12..14 for advanced worlds
+  const numSegments = 8 + Math.floor(t * 4) + (advanced ? 2 : 0); // 8..12 at t<=1, more for worlds pushing past it
 
   const platforms = [];
   const spikes = [];
@@ -133,7 +135,12 @@ function generateLevel(id, theme, name, world, totalLevels) {
   }
   const levelWidth = x;
 
-  const spikeProb = 0.35 + t * 0.45;
+  // Spike density caps out at the original campaign's hardest point (t=1)
+  // even for worlds that push t further, so those later worlds get their
+  // extra difficulty from length/gaps/moving platforms instead of nothing
+  // but spikes - which would otherwise crowd out spike-free segments and
+  // leave no room for springs to ever appear.
+  const spikeProb = 0.35 + Math.min(t, 1) * 0.45;
   const movingProb = Math.min(0.5, Math.max(0, 0.15 + t * 0.35));
 
   // Advanced worlds occasionally use a wider spike (chance grows from 0 to
@@ -226,7 +233,10 @@ function generateLevel(id, theme, name, world, totalLevels) {
   };
 }
 
-// 100 levels across 12 themed worlds, ordered easiest to hardest.
+// The original 100 levels across 12 themed worlds, ordered easiest to
+// hardest. Kept exactly as-is (including how their difficulty `t` is
+// computed below) so existing players' star ratings and best times stay
+// valid - none of these levels' layouts change when more are added after.
 const WORLDS = [
   {
     theme: 'meadow',
@@ -330,14 +340,141 @@ const WORLDS = [
   },
 ];
 
+// 100 more levels across 12 new worlds, picking up right where the
+// original campaign left off. Their difficulty (see EXPANSION_T below)
+// keeps ramping past where World 12 topped out, so this is the "advanced
+// tier" for players who've cleared everything above.
+const EXPANSION_WORLDS = [
+  {
+    theme: 'autumn',
+    displayName: 'Autumn',
+    names: [
+      'Maple Hollow', 'Pumpkin Patch', 'Acorn Alley', 'Crimson Canopy',
+      'Harvest Trail', 'Cider Creek', 'Rustling Leaves', 'Golden Grove',
+    ],
+  },
+  {
+    theme: 'beach',
+    displayName: 'Beach',
+    names: [
+      'Sandcastle Cove', 'Tide Pool Trail', 'Palm Shade', 'Driftwood Docks',
+      'Seashell Shore', 'Boardwalk Breeze', 'Sunburst Bay', 'Low Tide Lane',
+    ],
+  },
+  {
+    theme: 'carnival',
+    displayName: 'Carnival',
+    names: [
+      'Ferris Wheel Field', 'Popcorn Plaza', 'Ring Toss Row', 'Cotton Candy Court',
+      'Carousel Circle', 'Funhouse Flats', 'Balloon Boulevard', 'Midway Meadow',
+    ],
+  },
+  {
+    theme: 'alpine',
+    displayName: 'Alpine',
+    names: [
+      'Alpine Ascent', 'Frosty Summit', 'Timberline Trail', 'Eagle’s Nest',
+      'Snowcap Steps', 'Windy Crag', 'Boulder Bluff', 'Glacier Gate',
+      'Peak Point',
+    ],
+  },
+  {
+    theme: 'swamp',
+    displayName: 'Swamp',
+    names: [
+      'Mossy Mire', 'Reed Row', 'Cypress Crossing', 'Bog Bridge',
+      'Lily Pad Lane', 'Murky Marsh', 'Willow Wetlands', 'Croaking Cove',
+      'Swamp Summit',
+    ],
+  },
+  {
+    theme: 'toybox',
+    displayName: 'Toy Box',
+    names: [
+      'Building Block Bay', 'Wind-Up Way', 'Marble Maze', 'Puzzle Piece Path',
+      'Jack-in-the-Box Junction', 'Toy Soldier Row', 'Rocking Horse Ridge', 'Playroom Peak',
+    ],
+  },
+  {
+    theme: 'aurora',
+    displayName: 'Northern Lights',
+    names: [
+      'Moonlit Meadow', 'Borealis Trail', 'Starlight Steppe', 'Northern Notch',
+      'Glowing Glacier', 'Twilight Tundra', 'Comet Crest', 'Aurora Summit',
+    ],
+  },
+  {
+    theme: 'canyon',
+    displayName: 'Canyon',
+    names: [
+      'Red Rock Ridge', 'Mesa Mile', 'Sunbaked Butte', 'Tumbleweed Trail',
+      'Canyon Crossing', 'Dusty Divide', 'Sandstone Steps', 'Mesa Summit',
+    ],
+  },
+  {
+    theme: 'reef',
+    displayName: 'Coral Reef',
+    names: [
+      'Coral Cavern', 'Bubble Bay', 'Anemone Alley', 'Clownfish Cove',
+      'Kelp Forest Trail', 'Reef Ridge', 'Sunken Ship Shoals', 'Reef Summit',
+    ],
+  },
+  {
+    theme: 'firefly',
+    displayName: 'Firefly Meadow',
+    names: [
+      'Firefly Field', 'Dewdrop Trail', 'Cricket Crossing', 'Moonbeam Meadow',
+      'Glowworm Grove', 'Lantern Lane', 'Starry Pasture', 'Nightbloom Trail',
+      'Meadow Summit',
+    ],
+  },
+  {
+    theme: 'rooftop',
+    displayName: 'Rooftop',
+    names: [
+      'Chimney Row', 'Kite String Way', 'Rooftop Garden', 'Skylight Steps',
+      'Clothesline Crossing', 'Pigeon Perch', 'Water Tower Walk', 'City Sky Trail',
+      'Skyline Summit',
+    ],
+  },
+  {
+    theme: 'factory',
+    displayName: 'Robo Factory',
+    names: [
+      'Gearworks Gallery', 'Conveyor Court', 'Circuit Row', 'Piston Plaza',
+      'Sprocket Street', 'Assembly Alley', 'Robo Row', 'Factory Summit',
+    ],
+  },
+];
+
+// How much further past t=1 (the original campaign's hardest point) the
+// expansion worlds ramp up to by their very last level.
+const EXPANSION_EXTRA_DIFFICULTY = 0.3;
+
 export const LEVELS = [];
 {
-  const totalLevels = WORLDS.reduce((sum, w) => sum + w.names.length, 0);
+  // The original 100 levels: t computed exactly as it always was, so their
+  // layouts - and every existing player's star/best-time progress - don't
+  // shift when the campaign grows.
+  const originalTotal = WORLDS.reduce((sum, w) => sum + w.names.length, 0);
   let id = 0;
   for (const world of WORLDS) {
     for (const name of world.names) {
-      LEVELS.push(generateLevel(id, world.theme, name, world.displayName, totalLevels));
+      LEVELS.push(generateLevel(id, world.theme, name, world.displayName, id / (originalTotal - 1)));
       id++;
+    }
+  }
+
+  // The 100 expansion levels: difficulty continues climbing from where the
+  // original campaign left off (t=1) up to 1 + EXPANSION_EXTRA_DIFFICULTY.
+  const expansionTotal = EXPANSION_WORLDS.reduce((sum, w) => sum + w.names.length, 0);
+  let expansionIndex = 0;
+  for (const world of EXPANSION_WORLDS) {
+    for (const name of world.names) {
+      const t = 1 + (expansionIndex / (expansionTotal - 1)) * EXPANSION_EXTRA_DIFFICULTY;
+      LEVELS.push(generateLevel(id, world.theme, name, world.displayName, t));
+      id++;
+      expansionIndex++;
     }
   }
 }
@@ -412,6 +549,16 @@ const BONUS_DEFS = [
   { afterMainId: 79, theme: 'volcano', name: 'Volcano Bonus Round' },
   { afterMainId: 89, theme: 'sky', name: 'Sky Bonus Round' },
   { afterMainId: 99, theme: 'space', name: 'Space Bonus Round' },
+  { afterMainId: 109, theme: 'beach', name: 'Beach Bonus Round' },
+  { afterMainId: 119, theme: 'carnival', name: 'Carnival Bonus Round' },
+  { afterMainId: 129, theme: 'alpine', name: 'Alpine Bonus Round' },
+  { afterMainId: 139, theme: 'swamp', name: 'Swamp Bonus Round' },
+  { afterMainId: 149, theme: 'toybox', name: 'Toy Box Bonus Round' },
+  { afterMainId: 159, theme: 'canyon', name: 'Canyon Bonus Round' },
+  { afterMainId: 169, theme: 'reef', name: 'Reef Bonus Round' },
+  { afterMainId: 179, theme: 'firefly', name: 'Firefly Bonus Round' },
+  { afterMainId: 189, theme: 'rooftop', name: 'Rooftop Bonus Round' },
+  { afterMainId: 199, theme: 'factory', name: 'Factory Bonus Round' },
 ];
 
 export const BONUS_LEVELS = BONUS_DEFS.map((def, i) => ({
@@ -493,5 +640,79 @@ export const THEMES = {
     groundTop: '#B0A0E0', groundBody: '#7A6CB0',
     accent: '#F0D955', accent2: '#8FE8E0',
     decor: 'space',
+  },
+
+  // Expansion worlds (levels 101-200).
+  autumn: {
+    skyTop: '#F5C99B', skyBottom: '#FBE8D0',
+    groundTop: '#C97B4A', groundBody: '#8C5A3C',
+    accent: '#D9622B', accent2: '#F0C955',
+    decor: 'autumn',
+  },
+  beach: {
+    skyTop: '#AEE0EC', skyBottom: '#F5F9EA',
+    groundTop: '#F5E3B8', groundBody: '#E0C98A',
+    accent: '#FF9F6B', accent2: '#5CC9C2',
+    decor: 'beach',
+  },
+  carnival: {
+    skyTop: '#F5C9E0', skyBottom: '#FBEAF5',
+    groundTop: '#E0A8C9', groundBody: '#B87A9C',
+    accent: '#F0555A', accent2: '#F0D955',
+    decor: 'carnival',
+  },
+  alpine: {
+    skyTop: '#C9DCEE', skyBottom: '#EFF6FB',
+    groundTop: '#EAF0F5', groundBody: '#9CA8B8',
+    accent: '#F0DDB8', accent2: '#5C7C9C',
+    decor: 'alpine',
+  },
+  swamp: {
+    skyTop: '#9CB88C', skyBottom: '#D9E8C9',
+    groundTop: '#6E8C5A', groundBody: '#4A5C3C',
+    accent: '#D9C955', accent2: '#3C6E5A',
+    decor: 'swamp',
+  },
+  toybox: {
+    skyTop: '#D9E8F5', skyBottom: '#F5FAFF',
+    groundTop: '#F0C955', groundBody: '#D9622B',
+    accent: '#E85C7A', accent2: '#5C9CD9',
+    decor: 'toybox',
+  },
+  aurora: {
+    skyTop: '#243C6E', skyBottom: '#4A5C9C',
+    groundTop: '#D9E8F0', groundBody: '#8C9CB8',
+    accent: '#6EDCC9', accent2: '#B88CE8',
+    decor: 'aurora',
+  },
+  canyon: {
+    skyTop: '#F0C9A8', skyBottom: '#FBE8D0',
+    groundTop: '#D96E4A', groundBody: '#9C4A2E',
+    accent: '#E89C6B', accent2: '#8CA85C',
+    decor: 'canyon',
+  },
+  reef: {
+    skyTop: '#4AA8C9', skyBottom: '#8CD9E0',
+    groundTop: '#E0C98A', groundBody: '#B89A5C',
+    accent: '#F07A9C', accent2: '#6EDCC9',
+    decor: 'reef',
+  },
+  firefly: {
+    skyTop: '#3C4A6E', skyBottom: '#6E7CA8',
+    groundTop: '#5C7C4A', groundBody: '#3C4A2E',
+    accent: '#F0D955', accent2: '#8CC9E8',
+    decor: 'firefly',
+  },
+  rooftop: {
+    skyTop: '#E8A8B8', skyBottom: '#F5D9C9',
+    groundTop: '#9C8C7C', groundBody: '#6E6054',
+    accent: '#D96E5C', accent2: '#8CB8D9',
+    decor: 'rooftop',
+  },
+  factory: {
+    skyTop: '#B8C9D9', skyBottom: '#E8F0F5',
+    groundTop: '#8C9CAA', groundBody: '#5C6C7A',
+    accent: '#E8955C', accent2: '#6EC9D9',
+    decor: 'factory',
   },
 };

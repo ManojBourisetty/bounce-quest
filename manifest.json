@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Bounce Quest",
   "short_name": "Bounce Quest",
-  "description": "A cute offline physics platformer with squishy animations and 50 hand-tuned levels.",
+  "description": "A cute offline physics platformer with squishy animations and 200 hand-tuned levels.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

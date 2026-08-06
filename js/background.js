@@ -188,6 +188,169 @@ function planet(ctx, x, y, scale, bodyColor, ringColor) {
   ctx.fill();
 }
 
+// --- Expansion worlds (levels 101-200) ---
+
+function mapleTree(ctx, x, baseY, scale, color) {
+  ctx.fillStyle = '#7A5230';
+  ctx.fillRect(x - 3 * scale, baseY - 16 * scale, 6 * scale, 16 * scale);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, baseY - 26 * scale, 16 * scale, 0, Math.PI * 2);
+  ctx.arc(x - 12 * scale, baseY - 18 * scale, 11 * scale, 0, Math.PI * 2);
+  ctx.arc(x + 12 * scale, baseY - 18 * scale, 11 * scale, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function beachUmbrella(ctx, x, baseY, scale, colorA, colorB) {
+  ctx.strokeStyle = '#8C6A4E';
+  ctx.lineWidth = 3 * scale;
+  ctx.beginPath();
+  ctx.moveTo(x, baseY);
+  ctx.lineTo(x, baseY - 36 * scale);
+  ctx.stroke();
+  const segs = 6;
+  for (let i = 0; i < segs; i++) {
+    const a0 = Math.PI + (Math.PI * i) / segs;
+    const a1 = Math.PI + (Math.PI * (i + 1)) / segs;
+    ctx.fillStyle = i % 2 === 0 ? colorA : colorB;
+    ctx.beginPath();
+    ctx.moveTo(x, baseY - 36 * scale);
+    ctx.arc(x, baseY - 36 * scale, 22 * scale, a0, a1);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function balloonCluster(ctx, x, y, scale, colorA, colorB) {
+  [[-10, colorA, 0], [10, colorB, 1], [0, colorA, 2]].forEach(([dx, color, i]) => {
+    const by = y - i * 4 * scale;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + dx * scale, by + 13 * scale);
+    ctx.lineTo(x, y + 30 * scale);
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(x + dx * scale, by, 10 * scale, 13 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function snowPeak(ctx, x, baseY, scale, rockColor, snowColor) {
+  ctx.fillStyle = rockColor;
+  ctx.beginPath();
+  ctx.moveTo(x - 34 * scale, baseY);
+  ctx.lineTo(x, baseY - 60 * scale);
+  ctx.lineTo(x + 34 * scale, baseY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = snowColor;
+  ctx.beginPath();
+  ctx.moveTo(x - 10 * scale, baseY - 44 * scale);
+  ctx.lineTo(x, baseY - 60 * scale);
+  ctx.lineTo(x + 10 * scale, baseY - 44 * scale);
+  ctx.lineTo(x + 4 * scale, baseY - 40 * scale);
+  ctx.lineTo(x - 4 * scale, baseY - 40 * scale);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function lilyPad(ctx, x, baseY, scale, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, baseY - 4 * scale, 14 * scale, 0.4, Math.PI * 2 - 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.beginPath();
+  ctx.arc(x - 3 * scale, baseY - 6 * scale, 3 * scale, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function toyBlock(ctx, x, baseY, scale, colorA, colorB) {
+  const w = 26 * scale, h = 26 * scale;
+  ctx.fillStyle = colorA;
+  ctx.fillRect(x - w / 2, baseY - h, w, h);
+  ctx.fillStyle = colorB;
+  ctx.beginPath();
+  ctx.arc(x, baseY - h / 2, 6 * scale, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function mesaSpire(ctx, x, baseY, scale, color) {
+  ctx.fillStyle = color;
+  const tiers = [{ w: 48, h: 20 }, { w: 34, h: 18 }, { w: 20, h: 16 }];
+  let y = baseY;
+  for (const tier of tiers) {
+    ctx.fillRect(x - (tier.w / 2) * scale, y - tier.h * scale, tier.w * scale, tier.h * scale);
+    y -= tier.h * scale;
+  }
+}
+
+function coralBranch(ctx, x, baseY, scale, color) {
+  const arms = [[-8, 26], [0, 34], [9, 22]];
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 5 * scale;
+  ctx.lineCap = 'round';
+  for (const [dx, h] of arms) {
+    ctx.beginPath();
+    ctx.moveTo(x + dx * scale, baseY);
+    ctx.lineTo(x + dx * scale, baseY - h * scale);
+    ctx.stroke();
+  }
+  ctx.fillStyle = color;
+  for (const [dx, h] of arms) {
+    ctx.beginPath();
+    ctx.arc(x + dx * scale, baseY - h * scale, 4 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function bush(ctx, x, baseY, scale, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x - 10 * scale, baseY - 8 * scale, 9 * scale, 0, Math.PI * 2);
+  ctx.arc(x, baseY - 12 * scale, 11 * scale, 0, Math.PI * 2);
+  ctx.arc(x + 10 * scale, baseY - 8 * scale, 9 * scale, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function chimneyPot(ctx, x, baseY, scale, colorA, colorB) {
+  ctx.fillStyle = colorA;
+  ctx.fillRect(x - 8 * scale, baseY - 24 * scale, 16 * scale, 24 * scale);
+  ctx.fillStyle = colorB;
+  ctx.beginPath();
+  ctx.ellipse(x, baseY - 30 * scale, 7 * scale, 4 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function gearProp(ctx, x, baseY, scale, color) {
+  ctx.strokeStyle = '#8C9CAA';
+  ctx.lineWidth = 3 * scale;
+  ctx.beginPath();
+  ctx.moveTo(x, baseY);
+  ctx.lineTo(x, baseY - 20 * scale);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  const cx = x, cy = baseY - 32 * scale, r = 12 * scale;
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (Math.PI * 2 * i) / 8;
+    const rr = i % 2 === 0 ? r : r * 0.7;
+    const px = cx + Math.cos(a) * rr;
+    const py = cy + Math.sin(a) * rr;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.35, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 export function renderBackground(ctx, theme, opts) {
   const { canvasWidth, canvasHeight, cameraX, scale, visibleWidth, time } = opts;
 
@@ -277,6 +440,42 @@ export function renderBackground(ctx, theme, opts) {
       case 'space':
         planet(ctx, x, 40 + hash(i * 9) * 70, s * 0.7, theme.accent2, theme.accent);
         break;
+      case 'autumn':
+        mapleTree(ctx, x, baseY, s, i % 2 === 0 ? theme.accent : theme.accent2);
+        break;
+      case 'beach':
+        if (i % 2 === 0) beachUmbrella(ctx, x, baseY, s * 0.8, theme.accent, theme.accent2);
+        break;
+      case 'carnival':
+        balloonCluster(ctx, x, 50 + hash(i * 9) * 40, s * 0.8, theme.accent, theme.accent2);
+        break;
+      case 'alpine':
+        snowPeak(ctx, x, baseY, s * 0.9, theme.groundBody, '#FFFFFF');
+        break;
+      case 'swamp':
+        if (i % 2 === 0) lilyPad(ctx, x, baseY - 2, s * 0.9, theme.accent2);
+        break;
+      case 'toybox':
+        toyBlock(ctx, x, baseY, s * 0.9, theme.accent, theme.accent2);
+        break;
+      case 'aurora':
+        pineTree(ctx, x, baseY, s * 0.8, theme.groundBody);
+        break;
+      case 'canyon':
+        mesaSpire(ctx, x, baseY, s * 0.85, theme.groundBody);
+        break;
+      case 'reef':
+        if (i % 2 === 0) coralBranch(ctx, x, baseY, s * 0.85, theme.accent2);
+        break;
+      case 'firefly':
+        bush(ctx, x, baseY, s * 0.9, theme.groundBody);
+        break;
+      case 'rooftop':
+        chimneyPot(ctx, x, baseY, s * 0.85, theme.groundBody, theme.accent2);
+        break;
+      case 'factory':
+        gearProp(ctx, x, baseY, s * 0.8, theme.accent);
+        break;
     }
   });
 
@@ -303,14 +502,61 @@ export function renderBackground(ctx, theme, opts) {
   }
 
   // Twinkling stars
-  if (theme.decor === 'space') {
+  if (theme.decor === 'space' || theme.decor === 'aurora') {
     const starOffset = cameraX * 0.6;
     drawRepeating(46, starOffset, visibleWidth, (x, i) => {
-      const y = hash(i * 3.7) * WORLD_HEIGHT;
+      const y = hash(i * 3.7) * WORLD_HEIGHT * 0.6;
       const tw = 0.4 + 0.6 * Math.abs(Math.sin(time * 2 + i));
       ctx.fillStyle = `rgba(255,255,255,${tw})`;
       ctx.beginPath();
       ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Drifting aurora ribbons across the night sky
+  if (theme.decor === 'aurora') {
+    const auroraOffset = cameraX * 0.3;
+    const ribbonColors = ['rgba(110,220,201,0.25)', 'rgba(184,140,232,0.22)'];
+    drawRepeating(220, auroraOffset, visibleWidth, (x, i) => {
+      const bandY = 50 + hash(i * 5.3) * 60;
+      ctx.strokeStyle = ribbonColors[i % 2];
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      for (let px = -110; px <= 110; px += 10) {
+        const py = bandY + Math.sin((px + time * 40 + i * 30) * 0.02) * 14;
+        if (px === -110) ctx.moveTo(x + px, py);
+        else ctx.lineTo(x + px, py);
+      }
+      ctx.stroke();
+    });
+  }
+
+  // Bubbles rising past the coral
+  if (theme.decor === 'reef') {
+    const bubbleOffset = cameraX * 0.7;
+    drawRepeating(70, bubbleOffset, visibleWidth, (x, i) => {
+      const rise = (time * 26 + hash(i) * 300) % 320;
+      const y = WORLD_HEIGHT - 20 - rise;
+      if (y < 0) return;
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath();
+      ctx.arc(x + Math.sin(time * 1.5 + i) * 6, y, 2.5 + hash(i * 3) * 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Drifting, pulsing firefly glow
+  if (theme.decor === 'firefly') {
+    const fireflyOffset = cameraX * 0.6;
+    drawRepeating(80, fireflyOffset, visibleWidth, (x, i) => {
+      const y = WORLD_HEIGHT - 40 - hash(i * 4.1) * 90;
+      const glow = 0.3 + 0.5 * Math.abs(Math.sin(time * 2.4 + i * 3));
+      const fx = x + Math.sin(time * 0.8 + i) * 14;
+      const fy = y + Math.cos(time * 0.6 + i) * 10;
+      ctx.fillStyle = `rgba(240,217,85,${glow})`;
+      ctx.beginPath();
+      ctx.arc(fx, fy, 2.2, 0, Math.PI * 2);
       ctx.fill();
     });
   }
